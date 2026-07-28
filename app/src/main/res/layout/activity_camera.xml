@@ -1,0 +1,235 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/rootContainer"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="?attr/surface"
+    tools:context=".ui.camera.CameraActivity">
+
+    <!-- Camera Preview View - Displays the live camera feed -->
+    <androidx.camera.view.PreviewView
+        android:id="@+id/cameraPreview"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_gravity="center" />
+
+    <!-- UI Overlay Layer -->
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/uiOverlay"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <!-- Top Status Bar -->
+        <LinearLayout
+            android:id="@+id/statusBar"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:layout_marginStart="16dp"
+            android:layout_marginEnd="16dp"
+            android:orientation="horizontal"
+            android:visibility="gone"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent">
+
+            <TextView
+                android:id="@+id/statusText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="@android:color/white"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:background="?attr/overlayDark"
+                android:padding="6dp"
+                android:alpha="0.85"
+                android:cornerRadius="4dp" />
+        </LinearLayout>
+
+        <!-- Mode Toggle Group (Top Right) -->
+        <com.google.android.material.button.MaterialButtonToggleGroup
+            android:id="@+id/modeToggleGroup"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:layout_marginEnd="16dp"
+            android:visibility="gone"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnRealtimeMode"
+                style="@style/Widget.Material3.Button.TextButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/realtime_mode"
+                android:textSize="12sp"
+                android:textAllCaps="true" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnCaptureMode"
+                style="@style/Widget.Material3.Button.TextButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/capture_mode"
+                android:textSize="12sp"
+                android:textAllCaps="true" />
+        </MaterialButtonToggleGroup>
+
+        <!-- Capture Button (Bottom Center) -->
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/captureButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="24dp"
+            android:src="@drawable/ic_capture"
+            android:tint="@android:color/white"
+            android:contentDescription="Capture photo"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent"
+            android:visibility="gone">
+
+            <com.google.android.material.shape.AbsoluteSizeShape
+                android:shape="oval" />
+        </FloatingActionButton>
+
+        <!-- Processing Loading Overlay -->
+        <LinearLayout
+            android:id="@+id/loadingOverlay"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:gravity="center"
+            android:orientation="vertical"
+            android:visibility="gone"
+            tools:visibility="visible">
+
+            <com.google.android.material.progressindicator.CircularProgressIndicator
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                    indeterminateDrawable="@android:drawable/spinner_white_8" />
+
+            <TextView
+                android:id="@+id/loadingText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:textColor="@android:color/white"
+                android:textSize="16sp"
+                android:text="@string/processing" />
+        </LinearLayout>
+
+        <!-- Real-time Text Result Overlay (Bottom) -->
+        <androidx.cardview.widget.CardView
+            android:id="@+id/textOverlay"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:layout_marginEnd="16dp"
+            android:layout_marginBottom="16dp"
+            android:visibility="gone"
+            app:cardCornerRadius="8dp"
+            app:cardElevation="4dp"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent">
+
+            <androidx.constraintlayout.widget.ConstraintLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:padding="16dp"
+                android:background="?attr/overlayDark">
+
+                <!-- Original Text Label -->
+                <TextView
+                    android:id="@+id/originalLabel"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textColor="?attr/variantSecondary"
+                    android:textSize="12sp"
+                    android:textStyle="bold"
+                    android:text="ORIGINAL"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent" />
+
+                <!-- Original Text -->
+                <TextView
+                    android:id="@+id/originalText"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:textColor="@android:color/white"
+                    android:textSize="14sp"
+                    android:textStyle="italic"
+                    android:maxLines="3"
+                    android:ellipsize="end"
+                    app:layout_constraintTop_toBottomOf="@id/originalLabel"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent" />
+
+                <!-- Translated Text Label -->
+                <TextView
+                    android:id="@+id/translatedLabel"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    android:textColor="?attr/tertiary"
+                    android:textSize="12sp"
+                    android:textStyle="bold"
+                    android:text="TRANSLATION"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@id/originalText" />
+
+                <!-- Translated Text -->
+                <TextView
+                    android:id="@+id/translatedText"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:textColor="@android:color/white"
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+                    android:maxLines="4"
+                    android:ellipsize="end"
+                    app:layout_constraintTop_toBottomOf="@id/translatedLabel"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent" />
+
+            </androidx.constraintlayout.widget.ConstraintLayout>
+        </androidx.cardview.widget.CardView>
+
+        <!-- Permission Denied Overlay -->
+        <LinearLayout
+            android:id="@+id/permissionDeniedOverlay"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:gravity="center"
+            android:orientation="vertical"
+            android:visibility="gone"
+            android:background="?attr/overlayDark"
+            android:padding="24dp"
+            tools:visibility="visible">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="24dp"
+                android:textColor="@android:color/white"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:text="@string/camera_permission_denied" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnRetryPermission"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="@android:color/white"
+                android:backgroundTint="?attr/primary"
+                android:text="@string/settings" />
+
+        </LinearLayout>
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+</FrameLayout>

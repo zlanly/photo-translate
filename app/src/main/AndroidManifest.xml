@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <!-- Camera permission -->
+    <uses-permission android:name="android.permission.CAMERA" />
+
+    <!-- Storage permission for saving translated images (Android 13+) -->
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"
+        android:maxSdkVersion="28" />
+
+    <!-- Android 13+ requires this for photos only -->
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+
+    <!-- Use full camera feature -->
+    <uses-feature android:name="android.hardware.camera" android:required="true" />
+    <uses-feature android:name="android.hardware.camera.autofocus" android:required="false" />
+
+    <application
+        android:name=".application.PhotoTranslateApp"
+        android:allowBackup="true"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:theme="@style/Theme.PhotoTranslate"
+        android:usesCleartextTraffic="false"
+        android:requestLegacyExternalStorage="false">
+
+        <!-- Main Activity -->
+        <activity
+            android:name=".ui.camera.CameraActivity"
+            android:exported="true"
+            android:screenOrientation="portrait"
+            android:theme="@style/Theme.PhotoTranslate.NoActionBar"
+            android:hardwareAccelerated="true"
+            android:configChanges="orientation|screenSize|keyboard|keyboardHidden|fontScale|smallestScreenSize|layoutDirection">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!-- Result Activity (for Phase 3) -->
+        <activity
+            android:name=".ui.result.ResultActivity"
+            android:exported="false"
+            android:screenOrientation="portrait"
+            android:theme="@style/Theme.PhotoTranslate.NoActionBar"
+            android:hardwareAccelerated="true" />
+
+        <!-- Settings Activity -->
+        <activity
+            android:name=".ui.settings.SettingsActivity"
+            android:exported="false"
+            android:screenOrientation="portrait"
+            android:theme="@style/Theme.PhotoTranslate.NoActionBar" />
+
+        <!-- Language Select Activity -->
+        <activity
+            android:name=".ui.language.LanguageSelectActivity"
+            android:exported="false"
+            android:screenOrientation="portrait"
+            android:theme="@style/Theme.PhotoTranslate.NoActionBar" />
+
+        <!-- FirebaseApp initialization (required for ML Kit) -->
+        <meta-data
+            android:name="firebase_app"
+            android:value="true" />
+        <meta-data
+            android:name="firebase_analytics_collection_enabled"
+            android:value="false" />
+
+    </application>
+
+</manifest>

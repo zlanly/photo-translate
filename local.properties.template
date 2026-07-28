@@ -1,0 +1,12 @@
+# local.properties - This file is NOT committed to version control.
+# It contains machine-specific paths that vary between developers.
+# Example content:
+# sdk.dir=/path/to/Android/sdk
+# android.ndkVersion=25.1.8937333
+
+# Please replace the path below with your actual Android SDK location.
+# On Windows: sdk.dir=C:\\Users\\YourName\\AppData\\Local\\Android\\Sdk
+# On macOS: sdk.dir=/Users/YourName/Library/Android/sdk
+# On Linux: sdk.dir=/home/YourName/Android/sdk
+
+sdk.dir=

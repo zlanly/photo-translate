@@ -1,0 +1,93 @@
+name: Android CI/CD
+
+on:
+  push:
+    branches: [ "master", "main" ]
+  pull_request:
+    branches: [ "master", "main" ]
+  workflow_dispatch:
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up JDK 17
+      uses: actions/setup-java@v4
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+        cache: gradle
+
+    - name: Configure Android SDK
+      uses: android-actions/setup-android@v2
+      with:
+        channels: 'platforms,build-tools'
+        abi: 'armeabi-v7a'
+
+    - name: Install additional SDK components
+      run: |
+        sdkmanager --update
+        sdkmanager "platform-tools" "platforms;android-35" "build-tools;35.0.0"
+        yes | sdkmanager "licenses"
+
+    - name: Grant execute permission to gradlew
+      run: chmod +x ./gradlew
+
+    - name: Cache Gradle dependencies
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.gradle/wrapper
+          ~/.gradle/caches
+          gradle-wrapper.zip
+        key: ${{ runner.os }}-gradle-${{ hashFiles('**/gradle-wrapper.properties') }}
+        restore-keys: |
+          ${{ runner.os }}-gradle-
+
+    - name: Run lint checks
+      run: ./gradlew :app:lintRelease --no-daemon
+
+    - name: Build Debug APK
+      run: ./gradlew :app:assembleDebug --no-daemon
+
+    - name: Upload Debug APK
+      if: success()
+      uses: actions/upload-artifact@v4
+      with:
+        name: debug-apk
+        path: |
+          app/build/outputs/apk/debug/app-debug.apk
+        retention-days: 7
+
+    - name: Upload APK maps
+      if: success()
+      uses: actions/upload-artifact@v4
+      with:
+        name: debug-maps
+        path: |
+          app/build/outputs/mapping/debug/
+        retention-days: 7
+
+    # Optional: Release build with signing (configure secrets in GitHub repo settings)
+    - name: Build Release APK
+      if: github.ref == 'refs/heads/master' && secrets.SIGNING_KEY != ''
+      run: |
+        echo "$SECRETS_SIGNING_KEY" > keystore.jks
+        ./gradlew :app:assembleRelease --no-daemon
+      env:
+        SECRETS_SIGNING_KEY: ${{ secrets.SIGNING_KEY }}
+        KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        SIGNING_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD }}
+        KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+
+    - name: Upload Release APK
+      if: success() && github.ref == 'refs/heads/master'
+      uses: actions/upload-artifact@v4
+      with:
+        name: release-apk
+        path: app/build/outputs/apk/release/app-release.apk
+        retention-days: 30

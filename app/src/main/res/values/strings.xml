@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- App name -->
+    <string name="app_name">Photo Translate</string>
+
+    <!-- Status messages -->
+    <string name="processing">Processing...</string>
+    <string name="scanning_text">Scanning text...</string>
+    <string name="translated_text">Translation:</string>
+
+    <!-- Permission denied -->
+    <string name="camera_permission_denied">Camera permission required</string>
+    <string name="settings">Settings</string>
+
+    <!-- Phase 2: Language selection strings -->
+    <string name="select_languages">Select Languages</string>
+    <string name="source_language">Source Language</string>
+    <string name="target_language">Target Language</string>
+    <string name="auto_detect">Auto Detect</string>
+    <string name="cancel">Cancel</string>
+    <string name="save">Save</string>
+
+    <!-- Phase 2: Model management strings -->
+    <string name="model_management">Model Management</string>
+    <string name="downloaded_models">Downloaded Models</string>
+    <string name="download_model">Download Model</string>
+    <string name="delete_model">Delete Model</string>
+
+    <!-- Model status messages -->
+    <string name="model_installed">Installed</string>
+    <string name="model_downloading">Downloading…</string>
+    <string name="model_not_installed">Not installed</string>
+
+    <!-- Phase 3: Result page strings -->
+    <string name="translation_result">Translation Result</string>
+    <string name="back">Back</string>
+    <string name="original_text">Original</string>
+    <string name="translated_text">Translation</string>
+    <string name="copy">Copy</string>
+    <string name="share">Share</string>
+    <string name="save">Save</string>
+
+    <!-- Placeholder strings for future localization -->
+    <string name="realtime_mode">Live</string>
+    <string name="capture_mode">Photo</string>
+
+</resources>
