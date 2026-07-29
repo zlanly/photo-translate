@@ -54,6 +54,10 @@ android {
     buildFeatures {
         viewBinding true
     }
+
+    testOptions {
+        unitTests.returnDefaultValues = true
+    }
 }
 
 dependencies {
@@ -91,4 +95,10 @@ dependencies {
 
     // Google Play Services tasks (provides Tasks.await for blocking ML Kit results)
     implementation 'com.google.android.gms:play-services-tasks:18.2.0'
+
+    // Unit testing
+    testImplementation 'junit:junit:4.13.2'
+    testImplementation 'io.mockk:mockk:1.13.10'
+    testImplementation 'io.mockk:mockk-agent:1.13.10'
+    testImplementation 'org.jetbrains.kotlinx:kotlinx-coroutines-test:1.7.3'
 }

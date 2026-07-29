@@ -8,7 +8,7 @@ build/
 # Gradle
 gradle.properties
 gradle-wrapper.properties
-.properties
+*.properties
 
 # Release signing keystore (contains secrets, never commit)
 keystore/

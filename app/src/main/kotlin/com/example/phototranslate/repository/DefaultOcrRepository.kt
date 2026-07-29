@@ -49,10 +49,15 @@ class DefaultOcrRepository(
     }
 
     override fun analyze(imageProxy: ImageProxy): OcrResult {
+        val mediaImage = imageProxy.image
+        if (mediaImage == null) {
+            imageProxy.close()
+            return OcrResult(success = false, errorMessage = "ImageProxy.image is null")
+        }
         return try {
             // Convert ImageProxy to ML Kit InputImage format directly (more efficient).
             val inputImage = InputImage.fromMediaImage(
-                imageProxy.image!!,
+                mediaImage,
                 imageProxy.imageInfo.rotationDegrees
             )
             val taskResult = Tasks.await(textRecognitionClient.process(inputImage))

@@ -161,13 +161,12 @@ class CameraActivity : AppCompatActivity() {
             val ocrResult = getOcrUseCase().analyze(imageProxy)
             Handler(Looper.getMainLooper()).post {
                 showLoading(false)
-                handleOcrResult(ocrResult, imageProxy)
+                handleOcrResult(ocrResult)
             }
         }
     }
 
-    private fun handleOcrResult(ocrResult: OcrResult, imageProxy: ImageProxy) {
-        imageProxy.close()
+    private fun handleOcrResult(ocrResult: OcrResult) {
         if (ocrResult.success && ocrResult.textRecognitionResult != null) {
             val fullText = ocrResult.textRecognitionResult.fullText
             binding.originalText.text = if (fullText.length > 100) fullText.substring(0, 100) + "..." else fullText
