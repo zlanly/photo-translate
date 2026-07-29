@@ -1,6 +1,6 @@
 # Android
 *.iml
-*.gradle
+.gradle/
 .idea/
 build/
 *.log
@@ -9,6 +9,9 @@ build/
 gradle.properties
 gradle-wrapper.properties
 .properties
+
+# Release signing keystore (contains secrets, never commit)
+keystore/
 
 # Build output
 app/build/
