@@ -68,23 +68,3 @@ jobs:
         name: debug-maps
         path: app/build/outputs/mapping/debug/
         retention-days: 7
-
-    # Optional: Release build with signing
-    - name: Build Release APK
-      if: github.ref == 'refs/heads/master' && secrets.SIGNING_KEY != null
-      run: |
-        echo "$SECRETS_SIGNING_KEY" > keystore.jks
-        ./gradlew :app:assembleRelease --no-daemon
-      env:
-        SECRETS_SIGNING_KEY: ${{ secrets.SIGNING_KEY }}
-        KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
-        SIGNING_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD }}
-        KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
-
-    - name: Upload Release APK
-      if: success() && github.ref == 'refs/heads/master'
-      uses: actions/upload-artifact@v4
-      with:
-        name: release-apk
-        path: app/build/outputs/apk/release/app-release.apk
-        retention-days: 30
