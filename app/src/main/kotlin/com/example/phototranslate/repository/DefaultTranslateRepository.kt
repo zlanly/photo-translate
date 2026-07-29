@@ -42,21 +42,35 @@ class DefaultTranslateRepository(
         private const val MIN_REQUIRED_SPACE_MB = 10
     }
 
-    // Singleton translator instance (ML Kit manages its own lifecycle)
+    // 单一可复用 Translator，按 (源,目标) 缓存；实时模式每帧调用时避免反复新建客户端 / 并发下载。
+    @Volatile
     private var translator: Translator? = null
-    private var currentOptions: TranslatorOptions? = null
+    @Volatile
+    private var translatorSource: String? = null
+    @Volatile
+    private var translatorTarget: String? = null
+
+    // 串行化下载与翻译，避免 ML Kit 并发调用抛出异常。
+    private val translateLock = java.util.concurrent.locks.ReentrantLock()
 
     // Track active download operations to avoid concurrent downloads for same language
     private val activeDownloads = ConcurrentHashMap<String, AtomicBoolean>()
 
     /**
-     * Initialize the translator with the default options from the Application.
+     * 获取（按需创建并缓存）对应语言对的 Translator。调用方需在 translateLock 保护下使用。
      */
-    private fun initializeTranslator() {
-        val app = PhotoTranslateApp.app()
-        val options = app.getTranslateOptions()
-        translator = Translation.getClient(options)
-        currentOptions = options
+    private fun getOrCreateTranslator(sourceLang: String, targetLang: String): Translator {
+        if (translator == null || translatorSource != sourceLang || translatorTarget != targetLang) {
+            translator?.close()
+            val options = TranslatorOptions.Builder()
+                .setSourceLanguage(sourceLang)
+                .setTargetLanguage(targetLang)
+                .build()
+            translator = Translation.getClient(options)
+            translatorSource = sourceLang
+            translatorTarget = targetLang
+        }
+        return translator!!
     }
 
     /**
@@ -82,7 +96,7 @@ class DefaultTranslateRepository(
     private fun detectLanguageCode(text: String): String {
         return try {
             Tasks.await(LanguageIdentification.getClient().identifyLanguage(text))
-        } catch (e: Exception) {
+        } catch (t: Throwable) {
             "und"
         }
     }
@@ -95,31 +109,29 @@ class DefaultTranslateRepository(
                 // In a UI, we could show a "Downloading..." message
             }
 
-            if (translator == null) {
-                initializeTranslator()
-            }
-
             val sourceLang = resolveSourceLanguage(sourceLanguage, text)
             val targetLang = safeTranslateLanguage(targetLanguage)
 
-            // Configure the translator for this specific call
-            val options = TranslatorOptions.Builder()
-                .setSourceLanguage(sourceLang)
-                .setTargetLanguage(targetLang)
-                .build()
+            // 源语言与目标语言相同（如中文→中文）时，ML Kit 会抛 IllegalArgumentException，
+            // 此时无需翻译，直接返回原文。
+            if (sourceLang == targetLang) {
+                return Result.success(text)
+            }
 
-            // Create a fresh translator for this call
-            val localTranslator = Translation.getClient(options)
+            translateLock.lock()
             try {
+                val t = getOrCreateTranslator(sourceLang, targetLang)
                 // Ensure the required model is downloaded before translating.
-                Tasks.await(localTranslator.downloadModelIfNeeded())
-                val result = Tasks.await(localTranslator.translate(text))
+                Tasks.await(t.downloadModelIfNeeded())
+                val result = Tasks.await(t.translate(text))
                 Result.success(result)
             } finally {
-                localTranslator.close() // Clean up after use
+                translateLock.unlock()
             }
-        } catch (e: Exception) {
-            Result.failure(e)
+        } catch (t: Throwable) {
+            // 捕获 Throwable：ML Kit 运行时可能抛 Error（如 NoClassDefFoundError），
+            // 若只捕获 Exception 会穿透协程/线程导致进程崩溃。
+            Result.failure(if (t is Exception) t else RuntimeException(t))
         }
     }
 
@@ -129,7 +141,7 @@ class DefaultTranslateRepository(
         // the language code is supported and there is enough disk space.
         return try {
             TranslateLanguage.getAllLanguages().contains(languageCode) && checkDiskSpace()
-        } catch (e: Exception) {
+        } catch (t: Throwable) {
             false
         }
     }
@@ -143,7 +155,7 @@ class DefaultTranslateRepository(
             val usableSpace = stat.availableBytes
             val requiredSpace = MIN_REQUIRED_SPACE_MB * 1024 * 1024L // 10MB minimum
             usableSpace >= requiredSpace
-        } catch (e: Exception) {
+        } catch (t: Throwable) {
             // If we can't check disk space, assume it's fine
             true
         }
@@ -207,12 +219,12 @@ class DefaultTranslateRepository(
                 "Model ready for translation"
             ))
 
-        } catch (e: Exception) {
+        } catch (t: Throwable) {
             downloadActive.set(false)
             emit(ModelManagerResult(
                 false,
                 null,
-                "Download failed: ${e.message}"
+                "Download failed: ${t.message}"
             ))
         } finally {
             downloadActive.set(false)
@@ -234,8 +246,8 @@ class DefaultTranslateRepository(
             // In production, you could clear app cache to remove downloaded models:
             // context.cacheDir.deleteRecursively() for the app's cache directory
 
-        } catch (e: Exception) {
-            emit(ModelManagerResult(false, null, "Failed to delete model: ${e.message}"))
+        } catch (t: Throwable) {
+            emit(ModelManagerResult(false, null, "Failed to delete model: ${t.message}"))
         }
     }.flowOn(coroutineFlowExecutor)
 
@@ -267,12 +279,15 @@ class DefaultTranslateRepository(
     }.flowOn(coroutineFlowExecutor)
 
     override fun configure(options: TranslatorOptions) {
-        translator?.let { translator ->
-            // Reinitialize with new options
-            translator.close()
+        translateLock.lock()
+        try {
+            translator?.close()
+            translator = null
+            translatorSource = null
+            translatorTarget = null
+        } finally {
+            translateLock.unlock()
         }
-        this.currentOptions = options
-        initializeTranslator()
     }
 
     override fun shutdown() {

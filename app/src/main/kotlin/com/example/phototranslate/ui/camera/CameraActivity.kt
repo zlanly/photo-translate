@@ -11,6 +11,7 @@ import android.os.Looper
 import android.provider.Settings
 import android.util.Log
 import android.util.Size
+import android.view.MotionEvent
 import android.widget.Toast
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
@@ -33,6 +34,7 @@ import com.example.phototranslate.usecase.DefaultOcrUseCase
 import com.example.phototranslate.usecase.DefaultTranslateUseCase
 import com.example.phototranslate.usecase.OcrUseCase
 import com.example.phototranslate.usecase.TranslateUseCase
+import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.util.concurrent.Executors
@@ -51,12 +53,19 @@ class CameraActivity : AppCompatActivity() {
     private lateinit var binding: ActivityCameraBinding
     private val cameraExecutor = Executors.newFixedThreadPool(4)
     private var imageCapture: ImageCapture? = null
+    private var camera: Camera? = null
+    private var preview: Preview? = null
 
     private val ocrUseCase: OcrUseCase = DefaultOcrUseCase()
     private val translateUseCase: TranslateUseCase = DefaultTranslateUseCase()
 
     private val mainHandler = Handler(Looper.getMainLooper())
     private var cameraStarted = AtomicBoolean(false)
+
+    // 协程异常兜底：避免实时/拍照链路中的未捕获异常直接闪退进程。
+    private val coroutineExceptionHandler = CoroutineExceptionHandler { _, throwable ->
+        Log.e("CameraActivity", "Uncaught coroutine error", throwable)
+    }
 
     private enum class Mode { LIVE, PHOTO }
     private var currentMode = Mode.LIVE
@@ -76,6 +85,7 @@ class CameraActivity : AppCompatActivity() {
         setupTopBar()
         setupModeToggle()
         setupCaptureButton()
+        setupFocus()
 
         binding.btnRealtimeMode.isChecked = true
         setupLiveMode()
@@ -166,6 +176,34 @@ class CameraActivity : AppCompatActivity() {
         }
     }
 
+    // ===== 点击对焦 =====
+    private fun setupFocus() {
+        // 预览填充屏幕，避免画面被裁切/拉伸导致的"对焦错误"观感。
+        binding.cameraPreview.scaleType = PreviewView.ScaleType.FILL_CENTER
+
+        binding.cameraPreview.setOnTouchListener { _, event ->
+            if (event.action == MotionEvent.ACTION_DOWN) {
+                val cam = camera ?: return@setOnTouchListener false
+                val pv = preview ?: return@setOnTouchListener false
+                val factory = SurfaceOrientedMeteringPointFactory(
+                    binding.cameraPreview.width.toFloat(),
+                    binding.cameraPreview.height.toFloat(),
+                    pv
+                )
+                val point = factory.createPoint(event.x, event.y)
+                val action = FocusMeteringAction.Builder(point)
+                    .setAutoCancelDuration(3, java.util.concurrent.TimeUnit.SECONDS)
+                    .build()
+                try {
+                    cam.cameraControl.startFocusAndMetering(action)
+                } catch (t: Throwable) {
+                    Log.w("CameraActivity", "startFocusAndMetering failed", t)
+                }
+            }
+            false
+        }
+    }
+
     // ===== 相机启动 =====
     private fun startCamera() {
         if (cameraStarted.getAndSet(true)) return
@@ -176,6 +214,7 @@ class CameraActivity : AppCompatActivity() {
 
                 val preview = Preview.Builder().build()
                 preview.setSurfaceProvider(binding.cameraPreview.surfaceProvider)
+                this@CameraActivity.preview = preview
 
                 val imageAnalysis = ImageAnalysis.Builder()
                     .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
@@ -185,10 +224,11 @@ class CameraActivity : AppCompatActivity() {
 
                 imageCapture = ImageCapture.Builder()
                     .setTargetResolution(Size(1920, 1080))
+                    .setCaptureMode(ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY)
                     .build()
 
                 val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
-                cameraProvider.bindToLifecycle(
+                camera = cameraProvider.bindToLifecycle(
                     this, cameraSelector, preview, imageAnalysis, imageCapture
                 )
                 Log.d("CameraActivity", "CameraX started")
@@ -211,9 +251,20 @@ class CameraActivity : AppCompatActivity() {
         lastOcrTime = currentTime
 
         cameraExecutor.execute {
-            // analyze 在 finally 中关闭 imageProxy（仓库独占其生命周期），调用方不再关闭
-            val ocrResult = ocrUseCase.analyze(imageProxy)
-            mainHandler.post { handleOcrResult(ocrResult) }
+            try {
+                // analyze 在 finally 中关闭 imageProxy（仓库独占其生命周期），调用方不再关闭
+                val ocrResult = ocrUseCase.analyze(imageProxy)
+                mainHandler.post {
+                    try {
+                        handleOcrResult(ocrResult)
+                    } catch (t: Throwable) {
+                        Log.e("CameraActivity", "handleOcrResult failed", t)
+                    }
+                }
+            } catch (t: Throwable) {
+                Log.e("CameraActivity", "OCR frame failed", t)
+                try { imageProxy.close() } catch (_: Throwable) { /* no-op */ }
+            }
         }
     }
 
@@ -238,7 +289,7 @@ class CameraActivity : AppCompatActivity() {
         previousText.set(text)
         updateStatus(getString(R.string.status_translating))
 
-        lifecycleScope.launch(Dispatchers.IO) {
+        lifecycleScope.launch(Dispatchers.IO + coroutineExceptionHandler) {
             val target = LanguagePreferences.getTarget(this@CameraActivity)
             val result = translateUseCase.translate(text, "auto", target)
             mainHandler.post {
@@ -261,23 +312,44 @@ class CameraActivity : AppCompatActivity() {
         binding.loadingOverlay.visibility = android.view.View.VISIBLE
         imageCapture.takePicture(cameraExecutor, object : ImageCapture.OnImageCapturedCallback() {
             override fun onCaptureSuccess(image: ImageProxy) {
-                val bitmap = image.toBitmap()
-                image.close()
-                lifecycleScope.launch(Dispatchers.IO) {
-                    val ocr = ocrUseCase.analyze(bitmap)
-                    val source = LanguagePreferences.getSource(this@CameraActivity)
-                    val target = LanguagePreferences.getTarget(this@CameraActivity)
-                    if (ocr.success && ocr.textRecognitionResult != null) {
-                        val fullText = ocr.textRecognitionResult.fullText
-                        val translation = translateUseCase.translate(fullText, source, target)
-                        mainHandler.post {
-                            binding.loadingOverlay.visibility = android.view.View.GONE
-                            openResult(fullText, translation.originalLanguage, target, translation)
+                // toBitmap() 在部分设备或图像格式下可能抛异常，必须就地捕获，否则会在相机线程未捕获崩溃。
+                val bitmap: Bitmap = try {
+                    val b = image.toBitmap()
+                    image.close()
+                    b
+                } catch (t: Throwable) {
+                    image.close()
+                    Log.e("CameraActivity", "Bitmap conversion failed", t)
+                    mainHandler.post {
+                        binding.loadingOverlay.visibility = android.view.View.GONE
+                        Toast.makeText(this@CameraActivity, R.string.translation_failed, Toast.LENGTH_SHORT).show()
+                    }
+                    return
+                }
+
+                lifecycleScope.launch(Dispatchers.IO + coroutineExceptionHandler) {
+                    try {
+                        val ocr = ocrUseCase.analyze(bitmap)
+                        val source = LanguagePreferences.getSource(this@CameraActivity)
+                        val target = LanguagePreferences.getTarget(this@CameraActivity)
+                        if (ocr.success && ocr.textRecognitionResult != null) {
+                            val fullText = ocr.textRecognitionResult.fullText
+                            val translation = translateUseCase.translate(fullText, source, target)
+                            mainHandler.post {
+                                binding.loadingOverlay.visibility = android.view.View.GONE
+                                openResult(fullText, translation.originalLanguage, target, translation)
+                            }
+                        } else {
+                            mainHandler.post {
+                                binding.loadingOverlay.visibility = android.view.View.GONE
+                                openResult("", "auto", target, null)
+                            }
                         }
-                    } else {
+                    } catch (t: Throwable) {
+                        Log.e("CameraActivity", "Photo pipeline failed", t)
                         mainHandler.post {
                             binding.loadingOverlay.visibility = android.view.View.GONE
-                            openResult("", "auto", target, null)
+                            Toast.makeText(this@CameraActivity, R.string.translation_failed, Toast.LENGTH_SHORT).show()
                         }
                     }
                 }

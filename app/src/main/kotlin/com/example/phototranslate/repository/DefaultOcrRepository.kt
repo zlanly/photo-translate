@@ -43,8 +43,10 @@ class DefaultOcrRepository(
                     fullText = fullText
                 )
             )
-        } catch (e: Exception) {
-            handleOcrError(e)
+        } catch (t: Throwable) {
+            // 必须用 Throwable：ML Kit 在运行时可能抛出 Error（如 NoClassDefFoundError /
+            // ExceptionInInitializerError），Exception 捕获不到会穿透导致进程崩溃。
+            handleOcrError(t)
         }
     }
 
@@ -74,8 +76,8 @@ class DefaultOcrRepository(
                     fullText = fullText
                 )
             )
-        } catch (e: Exception) {
-            handleOcrError(e)
+        } catch (t: Throwable) {
+            handleOcrError(t)
         } finally {
             imageProxy.close() // Always close the proxy after processing
         }
@@ -120,11 +122,11 @@ class DefaultOcrRepository(
     /**
      * Handle OCR errors by wrapping them in OcrResult with success = false.
      */
-    private fun handleOcrError(exception: Exception): OcrResult {
+    private fun handleOcrError(exception: Throwable): OcrResult {
         return OcrResult(
             success = false,
             errorMessage = "OCR error: ${exception.message}",
-            exception = exception
+            exception = if (exception is Exception) exception else RuntimeException(exception)
         )
     }
 }
