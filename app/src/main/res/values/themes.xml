@@ -1,43 +1,58 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources xmlns:tools="http://schemas.android.com/tools">
 
-    <!-- Base theme for the app -->
+    <!-- Base theme for the app (Material 3, 温暖清新浅色) -->
     <style name="Theme.PhotoTranslate" parent="Theme.Material3.DayNight.NoActionBar">
-        <!-- Primary brand color -->
+
+        <!-- Primary -->
         <item name="colorPrimary">@color/primary</item>
-        <item name="colorPrimaryVariant">@color/primary_variant</item>
         <item name="colorOnPrimary">@color/on_primary</item>
+        <item name="colorPrimaryContainer">@color/primary_container</item>
+        <item name="colorOnPrimaryContainer">@color/on_primary_container</item>
 
-        <!-- Secondary brand color -->
+        <!-- Secondary -->
         <item name="colorSecondary">@color/secondary</item>
-        <item name="colorSecondaryVariant">@color/secondary_variant</item>
         <item name="colorOnSecondary">@color/on_secondary</item>
+        <item name="colorSecondaryContainer">@color/secondary_container</item>
+        <item name="colorOnSecondaryContainer">@color/on_secondary_container</item>
 
-        <!-- Tertiary accent color -->
+        <!-- Tertiary -->
         <item name="colorTertiary">@color/tertiary</item>
         <item name="colorOnTertiary">@color/on_tertiary</item>
+        <item name="colorTertiaryContainer">@color/tertiary_container</item>
+        <item name="colorOnTertiaryContainer">@color/on_tertiary_container</item>
 
-        <!-- Background colors -->
+        <!-- Background & surface -->
         <item name="android:windowBackground">@color/background</item>
         <item name="colorOnBackground">@color/on_background</item>
-
-        <!-- Surface colors (cards, dialogs, sheets) -->
         <item name="colorSurface">@color/surface</item>
         <item name="colorOnSurface">@color/on_surface</item>
+        <item name="colorSurfaceVariant">@color/surface_variant</item>
+        <item name="colorOnSurfaceVariant">@color/on_surface_variant</item>
 
-        <!-- Error colors -->
+        <!-- Outline -->
+        <item name="colorOutline">@color/outline</item>
+
+        <!-- Error -->
         <item name="colorError">@color/error</item>
         <item name="colorOnError">@color/on_error</item>
+        <item name="colorErrorContainer">@color/error_container</item>
+        <item name="colorOnErrorContainer">@color/on_error_container</item>
 
-        <!-- Navigation bar -->
+        <!-- Status bar -->
+        <item name="android:statusBarColor">@android:color/transparent</item>
         <item name="android:windowLightStatusBar" tools:ignore="NewApi">true</item>
-        <item name="android:statusBarColor">@color/transparent</item>
     </style>
 
     <!-- No ActionBar variant -->
     <style name="Theme.PhotoTranslate.NoActionBar" parent="Theme.PhotoTranslate">
         <item name="windowActionBar">false</item>
         <item name="windowNoTitle">true</item>
+    </style>
+
+    <!-- Camera variant: 深色预览上用浅色状态栏图标 -->
+    <style name="Theme.PhotoTranslate.Camera" parent="Theme.PhotoTranslate.NoActionBar">
+        <item name="android:windowLightStatusBar" tools:ignore="NewApi">false</item>
     </style>
 
     <!-- Transparent theme for background effects -->

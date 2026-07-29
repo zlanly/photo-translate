@@ -41,9 +41,10 @@ class DefaultTranslateUseCase(
 
     constructor() : this(DefaultTranslateRepository(), DefaultOcrUseCase(), PhotoTranslateApp.app())
 
-    private var defaultTargetLanguage: String? = "en"
-    private val connectivityManager =
+    private var defaultTargetLanguage: String? = "zh"
+    private val connectivityManager by lazy {
         context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+    }
 
     private fun hasInternet(): Boolean {
         val network = connectivityManager.activeNetwork ?: return false
@@ -71,11 +72,15 @@ class DefaultTranslateUseCase(
             return TranslationResult(sourceLanguageCode, targetLanguageCode, text, "", "Network unavailable")
         }
 
-        val actualSourceLanguage = if (sourceLanguageCode == "auto") detectLanguage(text) else sourceLanguageCode
+        // 直接把源语言透传给仓库：仓库内部对 "auto" 会用 ML Kit LanguageIdentification
+        // 正确识别原文语种（原先此处 detectLanguage 写死返回 "und"，导致自动检测失效）。
+        val actualSourceLanguage = sourceLanguageCode
         return try {
             val result = translateRepository.translate(text, actualSourceLanguage, targetLanguageCode)
-            result.map { TranslationResult(actualSourceLanguage, targetLanguageCode, text, it) }
-                .getOrNull() ?: TranslationResult(actualSourceLanguage, targetLanguageCode, text, "", "Failed")
+            result.fold(
+                onSuccess = { TranslationResult(actualSourceLanguage, targetLanguageCode, text, it) },
+                onFailure = { TranslationResult(actualSourceLanguage, targetLanguageCode, text, "", it.message) }
+            )
         } catch (e: Exception) {
             TranslationResult(actualSourceLanguage, targetLanguageCode, text, "", "Error: ${e.message}")
         }
@@ -107,6 +112,4 @@ class DefaultTranslateUseCase(
     override fun setDefaultTargetLanguage(languageCode: String) { defaultTargetLanguage = languageCode }
     override fun getDefaultTargetLanguage(): String? = defaultTargetLanguage
     override fun getSupportedLanguages() = translateRepository.getSupportedLanguages()
-
-    private fun detectLanguage(text: String): String = "und"
 }

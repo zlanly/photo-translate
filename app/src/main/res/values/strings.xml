@@ -1,46 +1,90 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <!-- App name -->
-    <string name="app_name">Photo Translate</string>
+    <!-- 应用名称 -->
+    <string name="app_name">拍照翻译</string>
 
-    <!-- Status messages -->
-    <string name="processing">Processing...</string>
-    <string name="scanning_text">Scanning text...</string>
-    <string name="translated_text">Translation:</string>
+    <!-- 顶部菜单 -->
+    <string name="menu_language">语言</string>
+    <string name="menu_history">历史</string>
+    <string name="menu_settings">设置</string>
 
-    <!-- Permission denied -->
-    <string name="camera_permission_denied">Camera permission required</string>
-    <string name="settings">Settings</string>
+    <!-- 模式 -->
+    <string name="realtime_mode">实时</string>
+    <string name="capture_mode">拍照</string>
+    <string name="mode_live">实时</string>
+    <string name="mode_photo">拍照</string>
 
-    <!-- Phase 2: Language selection strings -->
-    <string name="select_languages">Select Languages</string>
-    <string name="source_language">Source Language</string>
-    <string name="target_language">Target Language</string>
-    <string name="auto_detect">Auto Detect</string>
-    <string name="cancel">Cancel</string>
-    <string name="save">Save</string>
+    <!-- 状态文案 -->
+    <string name="processing">处理中…</string>
+    <string name="scanning_text">扫描文字中…</string>
+    <string name="status_scanning">实时识别中…</string>
+    <string name="status_detecting">识别文字中…</string>
+    <string name="status_translating">翻译中…</string>
+    <string name="status_ready">就绪</string>
+    <string name="status_no_text">未检测到文字，请换个角度</string>
+    <string name="status_live_ready">实时模式 · 就绪</string>
+    <string name="loading">加载中…</string>
 
-    <!-- Phase 2: Model management strings -->
-    <string name="model_management">Model Management</string>
-    <string name="downloaded_models">Downloaded Models</string>
-    <string name="download_model">Download Model</string>
-    <string name="delete_model">Delete Model</string>
+    <!-- 权限 -->
+    <string name="camera_permission_denied">相机权限被拒绝，请在设置中开启</string>
+    <string name="btn_open_settings">去设置</string>
+    <string name="btn_retry">重试</string>
 
-    <!-- Model status messages -->
-    <string name="model_installed">Installed</string>
-    <string name="model_downloading">Downloading…</string>
-    <string name="model_not_installed">Not installed</string>
+    <!-- 语言选择 -->
+    <string name="select_languages">选择语言</string>
+    <string name="source_language">源语言</string>
+    <string name="target_language">目标语言</string>
+    <string name="auto_detect">自动检测</string>
+    <string name="language_source_section">源语言（自动检测可识别原文语种）</string>
+    <string name="language_target_section">目标语言</string>
+    <string name="language_current">当前</string>
+    <string name="cancel">取消</string>
+    <string name="save">保存</string>
 
-    <!-- Phase 3: Result page strings -->
-    <string name="translation_result">Translation Result</string>
-    <string name="back">Back</string>
-    <string name="original_text">Original</string>
-    <string name="copy">Copy</string>
-    <string name="share">Share</string>
+    <!-- 模型管理 -->
+    <string name="model_management">模型管理</string>
+    <string name="downloaded_models">已下载模型</string>
+    <string name="download_model">下载模型</string>
+    <string name="delete_model">删除模型</string>
+    <string name="model_installed">已安装</string>
+    <string name="model_downloading">下载中…</string>
+    <string name="model_not_installed">未安装</string>
+    <string name="model_ready">模型就绪</string>
+    <string name="model_cleared">模型已清除</string>
+    <string name="disk_space">可用空间：%1$s</string>
 
-    <!-- Placeholder strings for future localization -->
-    <string name="realtime_mode">Live</string>
-    <string name="capture_mode">Photo</string>
+    <!-- 结果页 -->
+    <string name="translation_result">翻译结果</string>
+    <string name="back">返回</string>
+    <string name="original_text">原文</string>
+    <string name="translated_text">译文</string>
+    <string name="copy">复制</string>
+    <string name="share">分享</string>
+    <string name="save_history">保存</string>
+    <string name="source_target_info">%1$s → %2$s</string>
+    <string name="no_text_detected">未检测到文字</string>
+    <string name="translation_failed">翻译失败，请重试或检查网络</string>
+    <string name="toast_copied">已复制</string>
+    <string name="toast_saved_history">已保存到历史</string>
+    <string name="toast_shared">已分享</string>
+    <string name="open_result">查看</string>
+
+    <!-- 历史页 -->
+    <string name="history_title">历史记录</string>
+    <string name="history_empty">暂无翻译记录</string>
+    <string name="history_clear">清空历史</string>
+    <string name="history_search_hint">搜索历史</string>
+    <string name="history_favorite">收藏</string>
+    <string name="history_delete">删除</string>
+    <string name="confirm_clear_history">确定清空全部历史记录？</string>
+
+    <!-- 设置页 -->
+    <string name="settings_title">设置</string>
+    <string name="settings_default_target">默认目标语言</string>
+    <string name="settings_model_management">模型管理</string>
+    <string name="settings_clear_history">清空历史记录</string>
+    <string name="settings_about">关于</string>
+    <string name="settings_about_text">拍照翻译 v1.0\n基于 ML Kit 的离线相机翻译</string>
 
 </resources>

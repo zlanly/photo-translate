@@ -8,93 +8,144 @@
     android:background="@color/surface"
     tools:context=".ui.camera.CameraActivity">
 
-    <!-- Camera Preview View - Displays the live camera feed -->
+    <!-- 相机预览 -->
     <androidx.camera.view.PreviewView
         android:id="@+id/cameraPreview"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:layout_gravity="center" />
 
-    <!-- UI Overlay Layer -->
+    <!-- UI 浮层 -->
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/uiOverlay"
         android:layout_width="match_parent"
         android:layout_height="match_parent">
 
-        <!-- Top Status Bar -->
+        <!-- 顶部栏：标题 + 语言/历史/设置 -->
         <LinearLayout
-            android:id="@+id/statusBar"
-            android:layout_width="match_parent"
+            android:id="@+id/topAppBar"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            android:layout_marginStart="16dp"
-            android:layout_marginEnd="16dp"
+            android:background="@drawable/bg_top_scrim"
+            android:gravity="center_vertical"
             android:orientation="horizontal"
-            android:visibility="gone"
+            android:paddingStart="16dp"
+            android:paddingTop="12dp"
+            android:paddingEnd="12dp"
+            android:paddingBottom="12dp"
+            app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent">
+
+            <TextView
+                android:id="@+id/titleText"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/app_name"
+                android:textColor="@color/white"
+                android:textSize="20sp"
+                android:textStyle="bold" />
+
+            <ImageButton
+                android:id="@+id/btnLanguage"
+                android:layout_width="44dp"
+                android:layout_height="44dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="@string/menu_language"
+                android:src="@drawable/ic_language"
+                app:tint="@color/white" />
+
+            <ImageButton
+                android:id="@+id/btnHistory"
+                android:layout_width="44dp"
+                android:layout_height="44dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="@string/menu_history"
+                android:src="@drawable/ic_history"
+                app:tint="@color/white" />
+
+            <ImageButton
+                android:id="@+id/btnSettings"
+                android:layout_width="44dp"
+                android:layout_height="44dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="@string/menu_settings"
+                android:src="@drawable/ic_settings"
+                app:tint="@color/white" />
+        </LinearLayout>
+
+        <!-- 状态条（实时模式） -->
+        <LinearLayout
+            android:id="@+id/statusBar"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:layout_marginTop="12dp"
+            android:background="@drawable/bg_chip"
+            android:orientation="horizontal"
+            android:paddingStart="12dp"
+            android:paddingTop="6dp"
+            android:paddingEnd="12dp"
+            android:paddingBottom="6dp"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/topAppBar">
 
             <TextView
                 android:id="@+id/statusText"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:textColor="@android:color/white"
-                android:textSize="14sp"
-                android:textStyle="bold"
-                android:background="@color/overlay_dark"
-                android:padding="6dp"
-                android:alpha="0.85" />
+                android:textColor="@color/on_surface"
+                android:textSize="13sp" />
         </LinearLayout>
 
-        <!-- Mode Toggle Group (Top Right) -->
+        <!-- 模式切换（实时 / 拍照）-->
         <com.google.android.material.button.MaterialButtonToggleGroup
             android:id="@+id/modeToggleGroup"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
+            android:layout_marginTop="12dp"
             android:layout_marginEnd="16dp"
-            android:visibility="gone"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toTopOf="parent">
+            app:layout_constraintTop_toBottomOf="@id/topAppBar"
+            app:singleSelection="true">
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnRealtimeMode"
                 style="@style/Widget.Material3.Button.TextButton"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="@string/realtime_mode"
-                android:textSize="12sp"
-                android:textAllCaps="true" />
+                android:text="@string/mode_live"
+                android:textSize="13sp" />
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnCaptureMode"
                 style="@style/Widget.Material3.Button.TextButton"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="@string/capture_mode"
-                android:textSize="12sp"
-                android:textAllCaps="true" />
+                android:text="@string/mode_photo"
+                android:textSize="13sp" />
         </com.google.android.material.button.MaterialButtonToggleGroup>
 
-        <!-- Capture Button (Bottom Center) -->
+        <!-- 拍照按钮 -->
         <com.google.android.material.floatingactionbutton.FloatingActionButton
             android:id="@+id/captureButton"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="24dp"
+            android:layout_marginBottom="28dp"
+            android:contentDescription="@string/mode_photo"
             android:src="@drawable/ic_capture"
-            android:tint="@android:color/white"
-            android:contentDescription="Capture photo"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            android:visibility="gone" />
+            app:tint="@color/white" />
 
-        <!-- Processing Loading Overlay -->
+        <!-- 加载浮层 -->
         <LinearLayout
             android:id="@+id/loadingOverlay"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
+            android:background="@color/overlay_dark"
             android:gravity="center"
             android:orientation="vertical"
             android:visibility="gone"
@@ -102,127 +153,118 @@
 
             <com.google.android.material.progressindicator.CircularProgressIndicator
                 android:layout_width="48dp"
-                android:layout_height="48dp" />
-
+                android:layout_height="48dp"
+                app:indicatorColor="@color/white" />
 
             <TextView
                 android:id="@+id/loadingText"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
-                android:textColor="@android:color/white"
-                android:textSize="16sp"
-                android:text="@string/processing" />
+                android:text="@string/processing"
+                android:textColor="@color/white"
+                android:textSize="16sp" />
         </LinearLayout>
 
-        <!-- Real-time Text Result Overlay (Bottom) -->
-        <androidx.cardview.widget.CardView
+        <!-- 实时结果卡片 -->
+        <com.google.android.material.card.MaterialCardView
             android:id="@+id/textOverlay"
-            android:layout_width="match_parent"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginStart="16dp"
             android:layout_marginEnd="16dp"
-            android:layout_marginBottom="16dp"
-            android:visibility="gone"
-            app:cardCornerRadius="8dp"
-            app:cardElevation="4dp"
+            android:layout_marginBottom="100dp"
+            app:cardBackgroundColor="@color/surface"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="6dp"
             app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toEndOf="parent">
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent">
 
             <androidx.constraintlayout.widget.ConstraintLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:padding="16dp"
-                android:background="@color/overlay_dark">
+                android:padding="16dp">
 
-                <!-- Original Text Label -->
                 <TextView
                     android:id="@+id/originalLabel"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:textColor="@color/secondary_variant"
+                    android:text="@string/original_text"
+                    android:textColor="@color/secondary"
                     android:textSize="12sp"
                     android:textStyle="bold"
-                    android:text="ORIGINAL"
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintTop_toTopOf="parent" />
 
-                <!-- Original Text -->
                 <TextView
                     android:id="@+id/originalText"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    android:textColor="@android:color/white"
-                    android:textSize="14sp"
-                    android:textStyle="italic"
-                    android:maxLines="3"
+                    android:layout_marginTop="6dp"
                     android:ellipsize="end"
-                    app:layout_constraintTop_toBottomOf="@id/originalLabel"
+                    android:maxLines="3"
+                    android:textColor="@color/on_surface"
+                    android:textSize="14sp"
+                    app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintEnd_toEndOf="parent" />
+                    app:layout_constraintTop_toBottomOf="@id/originalLabel" />
 
-                <!-- Translated Text Label -->
                 <TextView
                     android:id="@+id/translatedLabel"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="16dp"
-                    android:textColor="@color/tertiary"
+                    android:layout_marginTop="14dp"
+                    android:text="@string/translated_text"
+                    android:textColor="@color/primary"
                     android:textSize="12sp"
                     android:textStyle="bold"
-                    android:text="TRANSLATION"
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintTop_toBottomOf="@id/originalText" />
 
-                <!-- Translated Text -->
                 <TextView
                     android:id="@+id/translatedText"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    android:textColor="@android:color/white"
+                    android:layout_marginTop="6dp"
+                    android:ellipsize="end"
+                    android:maxLines="4"
+                    android:textColor="@color/on_surface"
                     android:textSize="16sp"
                     android:textStyle="bold"
-                    android:maxLines="4"
-                    android:ellipsize="end"
-                    app:layout_constraintTop_toBottomOf="@id/translatedLabel"
+                    app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintEnd_toEndOf="parent" />
-
+                    app:layout_constraintTop_toBottomOf="@id/translatedLabel" />
             </androidx.constraintlayout.widget.ConstraintLayout>
-        </androidx.cardview.widget.CardView>
+        </com.google.android.material.card.MaterialCardView>
 
-        <!-- Permission Denied Overlay -->
+        <!-- 权限被拒浮层 -->
         <LinearLayout
             android:id="@+id/permissionDeniedOverlay"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
+            android:background="@color/overlay_dark"
             android:gravity="center"
             android:orientation="vertical"
+            android:padding="28dp"
             android:visibility="gone"
-            android:background="@color/overlay_dark"
-            android:padding="24dp"
             tools:visibility="visible">
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="24dp"
-                android:textColor="@android:color/white"
-                android:textSize="18sp"
-                android:textStyle="bold"
-                android:text="@string/camera_permission_denied" />
+                android:layout_marginBottom="20dp"
+                android:gravity="center"
+                android:text="@string/camera_permission_denied"
+                android:textColor="@color/white"
+                android:textSize="17sp" />
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnRetryPermission"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:textColor="@android:color/white"
-                android:backgroundTint="@color/primary"
-                android:text="@string/settings" />
-
+                android:text="@string/btn_open_settings"
+                app:backgroundTint="@color/primary" />
         </LinearLayout>
 
     </androidx.constraintlayout.widget.ConstraintLayout>
