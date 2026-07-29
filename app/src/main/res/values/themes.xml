@@ -19,7 +19,6 @@
 
         <!-- Background colors -->
         <item name="android:windowBackground">@color/background</item>
-        <item name="colorBackground">@color/background</item>
         <item name="colorOnBackground">@color/on_background</item>
 
         <!-- Surface colors (cards, dialogs, sheets) -->
@@ -33,9 +32,6 @@
         <!-- Navigation bar -->
         <item name="android:windowLightStatusBar" tools:ignore="NewApi">true</item>
         <item name="android:statusBarColor">@color/transparent</item>
-
-        <!-- Window background -->
-        <item name="android:windowBackground">@android:color/background_light</item>
     </style>
 
     <!-- No ActionBar variant -->

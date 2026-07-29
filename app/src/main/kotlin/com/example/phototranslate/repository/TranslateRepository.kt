@@ -3,8 +3,8 @@ package com.example.phototranslate.repository
 import com.example.phototranslate.domain.ModelStatus
 import com.example.phototranslate.domain.ModelDownloadEvent
 import com.example.phototranslate.domain.ModelManagerResult
-import com.google.mlkit.translate.TranslateLanguage
-import com.google.mlkit.translate.TranslatorOptions
+import com.google.mlkit.nl.translate.TranslateLanguage
+import com.google.mlkit.nl.translate.TranslatorOptions
 import kotlinx.coroutines.flow.Flow
 
 /**

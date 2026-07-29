@@ -88,7 +88,7 @@ class CameraActivity : AppCompatActivity() {
 
     private fun setupPhotoMode() {
         binding.textOverlay.visibility = android.view.View.GONE
-        binding.captureButton.visibility = android.view.VISIBLE
+        binding.captureButton.visibility = android.view.View.VISIBLE
         binding.statusBar.visibility = android.view.View.GONE
     }
 

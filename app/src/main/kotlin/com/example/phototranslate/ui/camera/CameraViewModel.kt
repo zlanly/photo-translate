@@ -10,6 +10,8 @@ import androidx.lifecycle.viewModelScope
 import com.example.phototranslate.domain.OcrResult
 import com.example.phototranslate.domain.TextRecognitionResult
 import com.example.phototranslate.domain.TranslationResult
+import com.example.phototranslate.usecase.DefaultOcrUseCase
+import com.example.phototranslate.usecase.DefaultTranslateUseCase
 import com.example.phototranslate.usecase.OcrUseCase
 import com.example.phototranslate.usecase.TranslateUseCase
 import kotlinx.coroutines.launch
@@ -51,9 +53,9 @@ class CameraViewModel(application: Application) : AndroidViewModel(application) 
         _cameraStatus.value = "Mode: ${if (mode == Mode.LIVE) "Live" else "Photo"}"
     }
 
-    fun processFrame(imageProxy: androidx.camera.core.ImageProxy, currentTime: Long, lastOcrTime: android.util.AtomicReference<Long>): Boolean {
+    fun processFrame(imageProxy: androidx.camera.core.ImageProxy, currentTime: Long, lastOcrTime: java.util.concurrent.atomic.AtomicReference<Long>): Boolean {
         val throttleInterval = 300L
-        if (currentTime - lastOcrTime.value < throttleInterval) {
+        if (currentTime - lastOcrTime.get() < throttleInterval) {
             imageProxy.close()
             return false
         }

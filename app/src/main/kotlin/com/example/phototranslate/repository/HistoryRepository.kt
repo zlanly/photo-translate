@@ -27,17 +27,17 @@ interface HistoryRepository {
     /**
      * Delete a specific entry.
      */
-    fun deleteEntry(entry: TranslationHistoryEntity)
+    suspend fun deleteEntry(entry: TranslationHistoryEntity)
 
     /**
      * Delete all history entries.
      */
-    fun deleteAll()
+    suspend fun deleteAll()
 
     /**
      * Mark an entry as favorite/unfavorite.
      */
-    fun toggleFavorite(entry: TranslationHistoryEntity)
+    suspend fun toggleFavorite(entry: TranslationHistoryEntity)
 
     /**
      * Get all favorited entries.

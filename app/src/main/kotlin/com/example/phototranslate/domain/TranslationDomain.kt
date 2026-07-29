@@ -42,7 +42,7 @@ val ALL_LANGUAGE_OPTIONS: List<LanguageOption> = listOf(
 enum class ModelDownloadStatus {
     INSTALLED,    // Model already downloaded and available
     DOWNLOADING,  // Model is currently being downloaded
-    NOT_INSTALLED // Model not downloaded, needs download,
+    NOT_INSTALLED, // Model not downloaded, needs download
     FAILED         // Download failed
 }
 

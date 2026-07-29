@@ -10,7 +10,7 @@ import kotlinx.coroutines.flow.Flow
  * Use Case for performing OCR (Optical Character Recognition) operations.
  * Encapsulates ML Kit Text Recognition logic.
  */
-interface OcrUseCase : UseCase<OcrResult> {
+interface OcrUseCase {
     /**
      * Perform OCR on a bitmap image.
      * @return OcrResult containing the recognition result or error

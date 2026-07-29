@@ -20,11 +20,11 @@ class DefaultHistoryUseCase(private val historyRepository: HistoryRepository) : 
 
     override fun searchHistory(query: String): Flow<List<TranslationHistoryEntity>> = historyRepository.searchEntries(query)
 
-    override fun deleteHistoryEntry(entry: TranslationHistoryEntity) = historyRepository.deleteEntry(entry)
+    override suspend fun deleteHistoryEntry(entry: TranslationHistoryEntity) = historyRepository.deleteEntry(entry)
 
-    override fun deleteAllHistory() = historyRepository.deleteAll()
+    override suspend fun deleteAllHistory() = historyRepository.deleteAll()
 
-    override fun toggleFavorite(entry: TranslationHistoryEntity) = historyRepository.toggleFavorite(entry)
+    override suspend fun toggleFavorite(entry: TranslationHistoryEntity) = historyRepository.toggleFavorite(entry)
 
     override fun getFavorites(): Flow<List<TranslationHistoryEntity>> = historyRepository.getFavorites()
 

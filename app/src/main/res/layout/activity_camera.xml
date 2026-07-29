@@ -1,10 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/rootContainer"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="?attr/surface"
+    android:background="@color/surface"
     tools:context=".ui.camera.CameraActivity">
 
     <!-- Camera Preview View - Displays the live camera feed -->
@@ -40,10 +41,9 @@
                 android:textColor="@android:color/white"
                 android:textSize="14sp"
                 android:textStyle="bold"
-                android:background="?attr/overlayDark"
+                android:background="@color/overlay_dark"
                 android:padding="6dp"
-                android:alpha="0.85"
-                android:cornerRadius="4dp" />
+                android:alpha="0.85" />
         </LinearLayout>
 
         <!-- Mode Toggle Group (Top Right) -->
@@ -74,7 +74,7 @@
                 android:text="@string/capture_mode"
                 android:textSize="12sp"
                 android:textAllCaps="true" />
-        </MaterialButtonToggleGroup>
+        </com.google.android.material.button.MaterialButtonToggleGroup>
 
         <!-- Capture Button (Bottom Center) -->
         <com.google.android.material.floatingactionbutton.FloatingActionButton
@@ -88,12 +88,7 @@
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintBottom_toBottomOf="parent"
-            android:visibility="gone">
-
-            <com.google.android.material.shape.AbsoluteSizeShape
-                android:shape="oval" />
-        </FloatingActionButton>
+            android:visibility="gone" />
 
         <!-- Processing Loading Overlay -->
         <LinearLayout
@@ -107,8 +102,8 @@
 
             <com.google.android.material.progressindicator.CircularProgressIndicator
                 android:layout_width="48dp"
-                android:layout_height="48dp"
-                    indeterminateDrawable="@android:drawable/spinner_white_8" />
+                android:layout_height="48dp" />
+
 
             <TextView
                 android:id="@+id/loadingText"
@@ -139,14 +134,14 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:padding="16dp"
-                android:background="?attr/overlayDark">
+                android:background="@color/overlay_dark">
 
                 <!-- Original Text Label -->
                 <TextView
                     android:id="@+id/originalLabel"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:textColor="?attr/variantSecondary"
+                    android:textColor="@color/secondary_variant"
                     android:textSize="12sp"
                     android:textStyle="bold"
                     android:text="ORIGINAL"
@@ -174,7 +169,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="16dp"
-                    android:textColor="?attr/tertiary"
+                    android:textColor="@color/tertiary"
                     android:textSize="12sp"
                     android:textStyle="bold"
                     android:text="TRANSLATION"
@@ -207,7 +202,7 @@
             android:gravity="center"
             android:orientation="vertical"
             android:visibility="gone"
-            android:background="?attr/overlayDark"
+            android:background="@color/overlay_dark"
             android:padding="24dp"
             tools:visibility="visible">
 
@@ -225,7 +220,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:textColor="@android:color/white"
-                android:backgroundTint="?attr/primary"
+                android:backgroundTint="@color/primary"
                 android:text="@string/settings" />
 
         </LinearLayout>

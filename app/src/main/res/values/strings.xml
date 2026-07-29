@@ -36,10 +36,8 @@
     <string name="translation_result">Translation Result</string>
     <string name="back">Back</string>
     <string name="original_text">Original</string>
-    <string name="translated_text">Translation</string>
     <string name="copy">Copy</string>
     <string name="share">Share</string>
-    <string name="save">Save</string>
 
     <!-- Placeholder strings for future localization -->
     <string name="realtime_mode">Live</string>

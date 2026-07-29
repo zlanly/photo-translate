@@ -5,6 +5,7 @@ import android.os.Bundle
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import com.example.phototranslate.databinding.ActivityResultBinding
 
 /**
  * Result Activity - Phase 3/4
@@ -12,6 +13,7 @@ import androidx.core.content.ContextCompat
  */
 class ResultActivity : AppCompatActivity() {
 
+    private lateinit var binding: ActivityResultBinding
     private lateinit var originalText: String
     private lateinit var translatedText: String
     private var sourceLanguage: String = "auto"
@@ -19,7 +21,8 @@ class ResultActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_result)
+        binding = ActivityResultBinding.inflate(layoutInflater)
+        setContentView(binding.root)
 
         resultDataFromIntent(intent)
         setupActions()

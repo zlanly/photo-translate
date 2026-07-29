@@ -9,21 +9,25 @@ import com.example.phototranslate.domain.ModelDownloadEvent
 import com.example.phototranslate.domain.ModelManagerResult
 import com.example.phototranslate.domain.ModelStatus
 import com.example.phototranslate.application.PhotoTranslateApp
-import com.google.mlkit.translate.Translate
-import com.google.mlkit.translate.TranslateLanguage
-import com.google.mlkit.translate.Translator
-import com.google.mlkit.translate.TranslatorOptions
-import com.google.mlkit.translate.TranslatorResult
+import com.google.android.gms.tasks.Tasks
+import com.google.mlkit.nl.languageid.LanguageIdentification
+import com.google.mlkit.nl.translate.TranslateLanguage
+import com.google.mlkit.nl.translate.Translation
+import com.google.mlkit.nl.translate.Translator
+import com.google.mlkit.nl.translate.TranslatorOptions
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
-import java.util.concurrent.Executor
-import java.util.concurrent.Executors
+import kotlinx.coroutines.flow.flowOn
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicBoolean
 
 /**
  * Default implementation of TranslateRepository using ML Kit Translate.
  * Handles both translation operations and model management (download/delete).
- * 
+ *
  * Note: ML Kit Translate automatically downloads models on first use.
  * The RemoteModelManager is primarily for Text Recognition models.
  * For Translate, we provide model management APIs that align with the interface,
@@ -31,7 +35,7 @@ import java.util.concurrent.atomic.AtomicBoolean
  */
 class DefaultTranslateRepository(
     private val context: Context = PhotoTranslateApp.app(),
-    private val coroutineFlowExecutor: kotlinx.coroutines.Dispatchers.IO
+    private val coroutineFlowExecutor: CoroutineDispatcher = Dispatchers.IO
 ) : TranslateRepository {
 
     companion object {
@@ -43,7 +47,7 @@ class DefaultTranslateRepository(
     private var currentOptions: TranslatorOptions? = null
 
     // Track active download operations to avoid concurrent downloads for same language
-    private val activeDownloads = java.util.concurrent.ConcurrentHashMap<String, AtomicBoolean>()
+    private val activeDownloads = ConcurrentHashMap<String, AtomicBoolean>()
 
     /**
      * Initialize the translator with the default options from the Application.
@@ -51,12 +55,40 @@ class DefaultTranslateRepository(
     private fun initializeTranslator() {
         val app = PhotoTranslateApp.app()
         val options = app.getTranslateOptions()
-        translator = Translate.create(options)
+        translator = Translation.getClient(options)
         currentOptions = options
     }
 
+    /**
+     * Resolve the source language. For "auto" we detect the language of the text
+     * using ML Kit Language Identification; otherwise we use the provided code.
+     */
+    private fun resolveSourceLanguage(sourceLanguage: String, text: String): String {
+        val code = if (sourceLanguage == "auto") {
+            detectLanguageCode(text)
+        } else {
+            sourceLanguage
+        }
+        return safeTranslateLanguage(code)
+    }
+
+    private fun safeTranslateLanguage(code: String): String {
+        return if (TranslateLanguage.getAllLanguages().contains(code)) code else TranslateLanguage.ENGLISH
+    }
+
+    /**
+     * Detect the language of the given text. Returns "und" when it cannot be determined.
+     */
+    private fun detectLanguageCode(text: String): String {
+        return try {
+            Tasks.await(LanguageIdentification.getClient().identifyLanguage(text))
+        } catch (e: Exception) {
+            "und"
+        }
+    }
+
     override fun translate(text: String, sourceLanguage: String, targetLanguage: String): Result<String> {
-        try {
+        return try {
             // Ensure model is available for target language (Translate auto-downloads on first use)
             if (!isModelAvailable(targetLanguage)) {
                 // Model will download automatically on first translate call
@@ -67,41 +99,36 @@ class DefaultTranslateRepository(
                 initializeTranslator()
             }
 
-            // For source language "auto", let ML Kit detect it automatically
-            val sourceLang = if (sourceLanguage == "auto") {
-                TranslateLanguage.AUTO
-            } else {
-                TranslateLanguage(sourceLanguage)
-            }
-
-            val targetLang = TranslateLanguage(targetLanguage)
+            val sourceLang = resolveSourceLanguage(sourceLanguage, text)
+            val targetLang = safeTranslateLanguage(targetLanguage)
 
             // Configure the translator for this specific call
             val options = TranslatorOptions.Builder()
                 .setSourceLanguage(sourceLang)
-                .setLanguage(targetLanguage)
+                .setTargetLanguage(targetLang)
                 .build()
 
             // Create a fresh translator for this call
-            val localTranslator = Translate.create(options)
-
-            val result = localTranslator.translate(text)
-            localTranslator.shutdown() // Clean up after use
-
-            return Result.success(result)
+            val localTranslator = Translation.getClient(options)
+            try {
+                // Ensure the required model is downloaded before translating.
+                Tasks.await(localTranslator.downloadModelIfNeeded())
+                val result = Tasks.await(localTranslator.translate(text))
+                Result.success(result)
+            } finally {
+                localTranslator.close() // Clean up after use
+            }
         } catch (e: Exception) {
-            return Result.failure(e)
+            Result.failure(e)
         }
     }
 
     override fun isModelInstalled(languageCode: String): Boolean {
         // ML Kit Translate doesn't expose a direct API to check model installation status.
         // Models are downloaded on-demand. We attempt a lightweight check by verifying
-        // we can create a translator for the language.
+        // the language code is supported and there is enough disk space.
         return try {
-            TranslateLanguage(languageCode) // Throws if invalid language code
-            checkDiskSpace()
-            true
+            TranslateLanguage.getAllLanguages().contains(languageCode) && checkDiskSpace()
         } catch (e: Exception) {
             false
         }
@@ -111,14 +138,14 @@ class DefaultTranslateRepository(
      * Check if there's enough disk space for translation models.
      */
     private fun checkDiskSpace(): Boolean {
-        try {
-            val stat = StatFs(context.externalCacheDir.path)
-            val usableSpace = stat.usableBytes
-            val requiredSpace = MIN_REQUIRED_SPACE_MB * 1024 * 1024 // 10MB minimum
-            return usableSpace >= requiredSpace
+        return try {
+            val stat = StatFs(context.externalCacheDir?.path ?: context.cacheDir.path)
+            val usableSpace = stat.availableBytes
+            val requiredSpace = MIN_REQUIRED_SPACE_MB * 1024 * 1024L // 10MB minimum
+            usableSpace >= requiredSpace
         } catch (e: Exception) {
             // If we can't check disk space, assume it's fine
-            return true
+            true
         }
     }
 
@@ -155,7 +182,7 @@ class DefaultTranslateRepository(
             // ML Kit Translate auto-downloads models on first use.
             // There's no explicit download API for Translate models like there is for Text Recognition.
             // We simulate the download process and emit status events.
-            
+
             // Emit downloading status
             emit(ModelManagerResult(
                 true,
@@ -165,7 +192,7 @@ class DefaultTranslateRepository(
 
             // Simulate download progress (in real code, actual download happens on first translate call)
             for (progress in 20..100 step 20) {
-                kotlinx.coroutines.delay(200)
+                delay(200)
                 emit(ModelManagerResult(
                     true,
                     ModelStatus(languageCode, ModelDownloadStatus.DOWNLOADING, progress / 100f),
@@ -187,6 +214,8 @@ class DefaultTranslateRepository(
                 null,
                 "Download failed: ${e.message}"
             ))
+        } finally {
+            downloadActive.set(false)
         }
     }.flowOn(coroutineFlowExecutor)
 
@@ -195,16 +224,16 @@ class DefaultTranslateRepository(
             // ML Kit doesn't expose explicit delete API for Translate models.
             // Models are cached and can be cleared via app cache cleanup.
             // We simulate the delete operation.
-            
+
             emit(ModelManagerResult(
                 true,
                 ModelStatus(languageCode, ModelDownloadStatus.NOT_INSTALLED),
                 "Model cleared (simulated)"
             ))
-            
+
             // In production, you could clear app cache to remove downloaded models:
             // context.cacheDir.deleteRecursively() for the app's cache directory
-            
+
         } catch (e: Exception) {
             emit(ModelManagerResult(false, null, "Failed to delete model: ${e.message}"))
         }
@@ -240,14 +269,14 @@ class DefaultTranslateRepository(
     override fun configure(options: TranslatorOptions) {
         translator?.let { translator ->
             // Reinitialize with new options
-            translator.shutdown()
+            translator.close()
         }
         this.currentOptions = options
         initializeTranslator()
     }
 
     override fun shutdown() {
-        translator?.shutdown()
+        translator?.close()
         translator = null
     }
 }

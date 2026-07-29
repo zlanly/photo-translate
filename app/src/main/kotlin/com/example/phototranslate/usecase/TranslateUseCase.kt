@@ -1,20 +1,21 @@
 package com.example.phototranslate.usecase
 
 import android.graphics.Bitmap
+import com.example.phototranslate.domain.TranslationResult
 import com.example.phototranslate.domain.ALL_LANGUAGE_OPTIONS
 import com.example.phototranslate.domain.LanguageOption
 import com.example.phototranslate.domain.ModelStatus
 import com.example.phototranslate.domain.ModelDownloadEvent
 import com.example.phototranslate.domain.ModelManagerResult
-import com.google.mlkit.translate.TranslateLanguage
-import com.google.mlkit.translate.TranslatorOptions
+import com.google.mlkit.nl.translate.TranslateLanguage
+import com.google.mlkit.nl.translate.TranslatorOptions
 import kotlinx.coroutines.flow.Flow
 
 /**
  * Use Case for performing translation operations.
  * Encapsulates ML Kit Translate logic including model management.
  */
-interface TranslateUseCase : UseCase<TranslationResult> {
+interface TranslateUseCase {
     /**
      * Translate text from source language to target language.
      * @param text The text to translate

@@ -28,13 +28,12 @@ class DefaultHistoryRepository(private val database: AppDatabase) : HistoryRepos
     override fun searchEntries(query: String): Flow<List<TranslationHistoryEntity>> =
         dao.searchEntries("%$query%")
 
-    override fun deleteEntry(entry: TranslationHistoryEntity) = dao.delete(entry)
+    override suspend fun deleteEntry(entry: TranslationHistoryEntity) = dao.delete(entry)
 
-    override fun deleteAll() = dao.deleteAll()
+    override suspend fun deleteAll() = dao.deleteAll()
 
-    override fun toggleFavorite(entry: TranslationHistoryEntity) {
-        entry.isFavorite = !entry.isFavorite
-        dao.update(entry)
+    override suspend fun toggleFavorite(entry: TranslationHistoryEntity) {
+        dao.update(entry.copy(isFavorite = !entry.isFavorite))
     }
 
     override fun getFavorites(): Flow<List<TranslationHistoryEntity>> = dao.getFavorites()

@@ -3,8 +3,8 @@ package com.example.phototranslate.ui.history
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.phototranslate.data.history.TranslationHistoryEntity
+import com.example.phototranslate.usecase.DefaultHistoryUseCase
 import com.example.phototranslate.usecase.HistoryUseCase
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 
 /**
@@ -12,6 +12,8 @@ import kotlinx.coroutines.launch
  * Provides history data to the UI and handles history operations.
  */
 class HistoryViewModel(private val historyUseCase: HistoryUseCase) : ViewModel() {
+
+    constructor() : this(DefaultHistoryUseCase())
 
     // Flow of all history entries (collected by UI)
     val allEntries = historyUseCase.getHistory()

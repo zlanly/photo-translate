@@ -3,7 +3,7 @@ package com.example.phototranslate.ui.history
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.ViewModelProvider
-import com.example.phototranslate.databinding.activityHistoryBinding
+import com.example.phototranslate.databinding.ActivityHistoryBinding
 
 /**
  * History Activity - Phase 5.

@@ -46,7 +46,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="@string/source_language"
-                android:textColor="?attr/secondary"
+                android:textColor="@color/secondary"
                 android:textSize="14sp"
                 android:textStyle="bold"
                 app:layout_constraintStart_toStartOf="parent"
@@ -71,7 +71,7 @@
                 android:layout_height="24dp"
                 android:layout_marginStart="8dp"
                 android:src="@drawable/ic_language"
-                android:tint="?attr/secondary"
+                android:tint="@color/secondary"
                 app:layout_constraintBottom_toBottomOf="@id/sourceLanguageText"
                 app:layout_constraintStart_toEndOf="@id/sourceLanguageText"
                 app:layout_constraintTop_toTopOf="@id/sourceLanguageText" />
@@ -105,7 +105,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="@string/target_language"
-                android:textColor="?attr/tertiary"
+                android:textColor="@color/tertiary"
                 android:textSize="14sp"
                 android:textStyle="bold"
                 app:layout_constraintStart_toStartOf="parent"
@@ -130,7 +130,7 @@
                 android:layout_height="24dp"
                 android:layout_marginStart="8dp"
                 android:src="@drawable/ic_language"
-                android:tint="?attr/tertiary"
+                android:tint="@color/tertiary"
                 app:layout_constraintBottom_toBottomOf="@id/targetLanguageText"
                 app:layout_constraintStart_toEndOf="@id/targetLanguageText"
                 app:layout_constraintTop_toTopOf="@id/targetLanguageText" />
@@ -146,7 +146,7 @@
         android:layout_marginStart="16dp"
         android:layout_marginEnd="16dp"
         android:layout_marginTop="16dp"
-        android:textColor="?attr/onSurface"
+        android:textColor="@color/on_surface"
         android:textSize="12sp"
         android:textStyle="italic"
         tools:text="Model status: English (installed)"
@@ -166,7 +166,7 @@
         app:layout_constraintEnd_toEndOf="parent">
 
         <com.google.android.material.button.MaterialButton
-            android:id="@+id btnCancel"
+            android:id="@+id/btnCancel"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginEnd="8dp"
@@ -175,13 +175,13 @@
             style="@style/Widget.Material3.Button.TextButton" />
 
         <com.google.android.material.button.MaterialButton
-            android:id="@+id btnSave"
+            android:id="@+id/btnSave"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginStart="8dp"
             android:layout_weight="1"
             android:text="@string/save"
-            android:backgroundTint="?attr/primary"
+            android:backgroundTint="@color/primary"
             android:textColor="@android:color/white" />
 
     </LinearLayout>

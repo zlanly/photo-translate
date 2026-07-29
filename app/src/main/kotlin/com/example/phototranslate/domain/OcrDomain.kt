@@ -29,6 +29,7 @@ data class TranslationResult(
     val targetLanguage: String,
     val originalText: String,
     val translatedText: String,
+    val errorMessage: String? = null,
     val confidence: Float = 1.0f,
     val timestamp: Long = System.currentTimeMillis()
 )

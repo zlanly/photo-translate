@@ -14,7 +14,7 @@ interface UseCase<out Result> {
  * Flow-based use case for asynchronous operations that emit multiple values over time.
  * Used for operations like model download progress, real-time OCR processing, etc.
  */
-abstract class FlowUseCase<Result> : UseCase<Flow<Result>>() {
+abstract class FlowUseCase<Result> : UseCase<Flow<Result>> {
     abstract fun executeInternal(): Flow<Result>
 
     override fun invoke(): Flow<Result> = executeInternal()

@@ -4,10 +4,11 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.phototranslate.domain.ModelStatus
 import com.example.phototranslate.usecase.TranslateUseCase
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 
 /**
  * ViewModel for displaying model download status.
@@ -30,19 +31,23 @@ class ModelStatusViewModel(private val translateUseCase: TranslateUseCase) : Vie
      * Download a specific language model.
      */
     fun downloadModel(languageCode: String) {
-        translateUseCase.downloadModel(languageCode)
-            .collect { result ->
-                // Handle result (show progress, error, etc.)
-            }
+        viewModelScope.launch {
+            translateUseCase.downloadModel(languageCode)
+                .collect { result ->
+                    // Handle result (show progress, error, etc.)
+                }
+        }
     }
 
     /**
      * Delete a specific language model.
      */
     fun deleteModel(languageCode: String) {
-        translateUseCase.deleteModel(languageCode)
-            .collect { result ->
-                // Handle result
-            }
+        viewModelScope.launch {
+            translateUseCase.deleteModel(languageCode)
+                .collect { result ->
+                    // Handle result
+                }
+        }
     }
 }

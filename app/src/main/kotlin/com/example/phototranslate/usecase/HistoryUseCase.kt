@@ -27,17 +27,17 @@ interface HistoryUseCase {
     /**
      * Delete an entry from history.
      */
-    fun deleteHistoryEntry(entry: TranslationHistoryEntity)
+    suspend fun deleteHistoryEntry(entry: TranslationHistoryEntity)
 
     /**
      * Delete all history.
      */
-    fun deleteAllHistory()
+    suspend fun deleteAllHistory()
 
     /**
      * Toggle favorite status.
      */
-    fun toggleFavorite(entry: TranslationHistoryEntity)
+    suspend fun toggleFavorite(entry: TranslationHistoryEntity)
 
     /**
      * Get favorited entries.
