@@ -14,6 +14,8 @@ import com.google.mlkit.vision.text.Text.TextBlock as MlKitTextBlock
 import com.google.mlkit.vision.text.TextRecognizer
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.runBlocking
 
 /**
  * Default implementation of OcrRepository using ML Kit Text Recognition.
@@ -78,38 +80,51 @@ class DefaultOcrRepository(
     }
 
     /**
-     * 同时跑两个识别器，合并文本块并推断占主导的语种。
+     * 同时跑两个识别器（并行，缩短实时识别耗时），各自按脚本过滤误识后合并，
+     * 并推断占主导的语种。
      */
     private fun recognizeBoth(latinImage: InputImage, cjkImage: InputImage): Pair<List<TextBlock>, String?> {
-        val latinResult = Tasks.await(latinClient.process(latinImage))
-        val cjkResult = Tasks.await(cjkClient.process(cjkImage))
-        val latinBlocks = latinResult.textBlocks.map { createTextBlock(it) }
-        val cjkBlocks = cjkResult.textBlocks.map { createTextBlock(it) }
-        val merged = mergeBlocks(cjkBlocks, latinBlocks)
-        val dominant = dominantLanguage(merged)
+        // 并行执行两个识别器：墙钟时间取较慢者而非两者之和，实时模式下约快一倍。
+        val (latinResult, cjkResult) = runBlocking(Dispatchers.Default) {
+            val a = async { Tasks.await(latinClient.process(latinImage)) }
+            val b = async { Tasks.await(cjkClient.process(cjkImage)) }
+            a.await() to b.await()
+        }
+        // 各自按脚本过滤：丢识别器在对方文字上的误识（如拉丁识别器在中文上读出的乱码字母）。
+        val latinBlocks = latinResult.textBlocks.map { createTextBlock(it) }.filter { looksLatin(it.text) }
+        val cjkBlocks = cjkResult.textBlocks.map { createTextBlock(it) }.filter { looksCjk(it.text) }
+        val dominant = dominantLanguage(cjkBlocks + latinBlocks)
+        val merged = mergeBlocks(cjkBlocks, latinBlocks, dominant)
         return merged to dominant
     }
 
     /**
      * 合并两个识别器的文本块：
-     *  - CJK 块全部保留（拉丁识别器读不了它们，必须靠 CJK 识别器）；
-     *  - 拉丁块仅在不与任何 CJK 块重叠时补入，避免把同一段英文重复计入。
-     * 最后按阅读顺序（先上后下、同行左到右）排序，保证翻译输入连贯。
+     *  - 以占主导的语种识别器结果为底（CJK 文档用 CJK 块、拉丁文档用拉丁块）；
+     *  - 仅补入不与任何底块重叠的「少数语种」块，从而既保留混排内容（如中英并列），
+     *    又剔除同区域被主导语种覆盖的误识（如中文上被拉丁识别器读出的乱码）。
+     * 最后按阅读顺序（先上后下、同行左到右）排序，保证翻译输入连贯、语句通顺。
      */
-    private fun mergeBlocks(cjk: List<TextBlock>, latin: List<TextBlock>): List<TextBlock> {
-        val result = cjk.toMutableList()
-        for (l in latin) {
-            val lb = l.boundingBox
-            // 空框（无 boundingBox）无法判断重叠，直接保留。
-            if (lb.left == 0 && lb.top == 0 && lb.right == 0 && lb.bottom == 0) {
-                result.add(l)
+    private fun mergeBlocks(cjk: List<TextBlock>, latin: List<TextBlock>, dominant: String?): List<TextBlock> {
+        if (cjk.isEmpty()) return latin.sortedWith(readingOrder)
+        if (latin.isEmpty()) return cjk.sortedWith(readingOrder)
+        val preferCjk = dominant in setOf("zh", "ja", "ko")
+        val base = if (preferCjk) cjk else latin
+        val other = if (preferCjk) latin else cjk
+        val result = base.toMutableList()
+        for (o in other) {
+            val ob = o.boundingBox
+            // 空框无法判断重叠，直接保留。
+            if (ob.left == 0 && ob.top == 0 && ob.right == 0 && ob.bottom == 0) {
+                result.add(o)
                 continue
             }
-            val overlaps = cjk.any { overlaps(lb, it.boundingBox, 0.4f) }
-            if (!overlaps) result.add(l)
+            if (base.none { overlaps(ob, it.boundingBox, 0.25f) }) result.add(o)
         }
-        return result.sortedWith(compareBy({ it.boundingBox.top }, { it.boundingBox.left }))
+        return result.sortedWith(readingOrder)
     }
+
+    private val readingOrder = compareBy<TextBlock>({ it.boundingBox.top }, { it.boundingBox.left })
 
     /**
      * 两个矩形交叠比例（交集面积 / 较小矩形面积）是否超过阈值。
@@ -141,6 +156,34 @@ class DefaultOcrRepository(
             weight[lang] = weight.getOrDefault(lang, 0) + b.text.length
         }
         return weight.maxByOrNull { it.value }?.key
+    }
+
+    /**
+     * 字符是否为中日韩（含假名、谚文、全角）Unicode 区段。
+     */
+    private fun isCjk(c: Char): Boolean {
+        val code = c.code
+        return code in 0x3000..0x30FF ||      //  CJK 标点 / 假名
+               code in 0x3400..0x9FFF ||      //  中日韩统一表意文字
+               code in 0xF900..0xFAFF ||      //  CJK 兼容汉字
+               code in 0xAC00..0xD7AF ||      //  谚文音节
+               code in 0xFF00..0xFFEF ||      //  全角字母/数字
+               code in 0x31F0..0x31FF         //  片假名拼音扩展
+    }
+
+    /**
+     * 文本是否像 CJK：含至少一个 CJK 区段字符。用于滤掉 CJK 识别器在纯拉丁文字上的误识。
+     */
+    private fun looksCjk(s: String): Boolean = s.any { isCjk(it) }
+
+    /**
+     * 文本是否像拉丁文：至少 2 个字母、且不含任何 CJK 字符。
+     * 用于滤掉拉丁识别器在 CJK 文字上读出的乱码字母块。
+     */
+    private fun looksLatin(s: String): Boolean {
+        if (s.isBlank()) return false
+        if (s.count { it.isLetter() } < 2) return false
+        return s.none { isCjk(it) }
     }
 
     private fun createTextBlock(mlKitBlock: MlKitTextBlock): TextBlock {

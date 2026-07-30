@@ -117,4 +117,16 @@ class DefaultTranslateUseCase(
     override fun setDefaultTargetLanguage(languageCode: String) { defaultTargetLanguage = languageCode }
     override fun getDefaultTargetLanguage(): String? = defaultTargetLanguage
     override fun getSupportedLanguages() = translateRepository.getSupportedLanguages()
+
+    override fun prepareModels(sourceLanguage: String, targetLanguage: String) {
+        val target = if (targetLanguage == "auto") "zh" else targetLanguage
+        // 显式源语言：仅预热该对。
+        translateRepository.preload(sourceLanguage, target)
+        // 自动检测：额外预热常见源语言，避免实时模式下源语种翻转时再触发下载。
+        if (sourceLanguage == "auto") {
+            listOf("en", "ja", "ko", "zh").forEach { src ->
+                if (src != target) translateRepository.preload(src, target)
+            }
+        }
+    }
 }

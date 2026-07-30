@@ -77,6 +77,11 @@ interface TranslateRepository {
     fun configure(options: TranslatorOptions)
 
     /**
+     * 预热：提前下载指定语言对的翻译模型，避免首次翻译时阻塞等待下载（秒级）。
+     */
+    fun preload(sourceLanguage: String, targetLanguage: String)
+
+    /**
      * Clean up resources.
      */
     fun shutdown()

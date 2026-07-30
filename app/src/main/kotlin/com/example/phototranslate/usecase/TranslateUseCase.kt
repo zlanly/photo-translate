@@ -76,6 +76,12 @@ interface TranslateUseCase {
     fun setDefaultTargetLanguage(languageCode: String)
 
     /**
+     * 预热常用语言对模型：显式源语言只预热该对；自动检测则额外预热
+     * 目标语言 + 常见源语言（英/日/韩/中），覆盖大多数实时翻译场景。
+     */
+    fun prepareModels(sourceLanguage: String, targetLanguage: String)
+
+    /**
      * Get the default target language.
      */
     fun getDefaultTargetLanguage(): String?

@@ -3,11 +3,15 @@ package com.example.phototranslate.ui.language
 import android.os.Bundle
 import android.view.LayoutInflater
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.lifecycleScope
 import com.example.phototranslate.databinding.ActivityLanguageSelectBinding
 import com.example.phototranslate.databinding.ItemLanguageBinding
 import com.example.phototranslate.R
 import com.example.phototranslate.domain.ALL_LANGUAGE_OPTIONS
 import com.example.phototranslate.domain.LanguageOption
+import com.example.phototranslate.usecase.DefaultTranslateUseCase
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 /**
  * 语言选择页：分别选择「源语言（含自动检测）」与「目标语言」，
@@ -29,7 +33,13 @@ class LanguageSelectActivity : AppCompatActivity() {
         selectedTarget = LanguagePreferences.getTarget(this)
 
         binding.btnBack.setOnClickListener { finish() }
-        binding.btnSave.setOnClickListener { finish() }
+        binding.btnSave.setOnClickListener {
+            // 保存即预热常用翻译模型，下载在设置页就开始，回到相机无需再等待。
+            lifecycleScope.launch(Dispatchers.IO) {
+                runCatching { DefaultTranslateUseCase().prepareModels(selectedSource, selectedTarget) }
+            }
+            finish()
+        }
 
         renderList(binding.sourceList, source = true)
         renderList(binding.targetList, source = false)

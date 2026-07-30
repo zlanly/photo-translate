@@ -72,7 +72,7 @@ class CameraActivity : AppCompatActivity() {
     private var currentMode = Mode.LIVE
 
     private var lastOcrTime = 0L
-    private val ocrThrottleInterval = 400L
+    private val ocrThrottleInterval = 250L
     private val previousText = AtomicReference("")
 
     // OCR 并发守卫：实时模式下仅允许同时存在一次识别+翻译，避免帧在相机线程堆积导致卡顿。
@@ -93,6 +93,15 @@ class CameraActivity : AppCompatActivity() {
 
         binding.btnRealtimeMode.isChecked = true
         setupLiveMode()
+
+        // 进入即预热常用翻译模型，避免实时/拍照首次翻译时阻塞等待下载（否则首帧会卡数秒）。
+        lifecycleScope.launch(Dispatchers.IO) {
+            runCatching {
+                val src = LanguagePreferences.getSource(this@CameraActivity)
+                val tgt = LanguagePreferences.getTarget(this@CameraActivity)
+                translateUseCase.prepareModels(src, tgt)
+            }
+        }
 
         checkPermissionAndStart()
     }
@@ -342,7 +351,12 @@ class CameraActivity : AppCompatActivity() {
                     val rotation = image.imageInfo.rotationDegrees
                     val raw = image.toBitmap()
                     image.close()
-                    rotateBitmap(raw, rotation)
+                    val rotated = rotateBitmap(raw, rotation)
+                    if (rotated != raw) raw.recycle()
+                    // 降采样到最长边 1280：翻译无需原图分辨率，可大幅缩短双识别器耗时、降低反应时间。
+                    val scaled = downscaleBitmap(rotated, 1280)
+                    if (scaled != rotated) rotated.recycle()
+                    scaled
                 } catch (t: Throwable) {
                     image.close()
                     Log.e("CameraActivity", "Bitmap conversion failed", t)
@@ -420,6 +434,18 @@ class CameraActivity : AppCompatActivity() {
         if (degrees == 0) return bitmap
         val matrix = Matrix().apply { postRotate(degrees.toFloat()) }
         return Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true)
+    }
+
+    /**
+     * 等比降采样 Bitmap，使最长边不超过 maxDim（翻译仅需文字清晰度，无需原图分辨率）。
+     */
+    private fun downscaleBitmap(bitmap: Bitmap, maxDim: Int): Bitmap {
+        val longer = maxOf(bitmap.width, bitmap.height)
+        if (longer <= maxDim) return bitmap
+        val scale = maxDim.toFloat() / longer
+        val nw = maxOf(1, (bitmap.width * scale).toInt())
+        val nh = maxOf(1, (bitmap.height * scale).toInt())
+        return Bitmap.createScaledBitmap(bitmap, nw, nh, true)
     }
 
     override fun onDestroy() {

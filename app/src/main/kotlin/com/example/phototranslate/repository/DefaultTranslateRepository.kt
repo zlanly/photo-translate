@@ -2,6 +2,7 @@ package com.example.phototranslate.repository
 
 import android.content.Context
 import android.os.StatFs
+import android.util.Log
 import com.example.phototranslate.domain.ALL_LANGUAGE_OPTIONS
 import com.example.phototranslate.domain.LanguageOption
 import com.example.phototranslate.domain.ModelDownloadStatus
@@ -286,6 +287,26 @@ class DefaultTranslateRepository(
         try {
             translators.values.forEach { it.close() }
             translators.clear()
+        } finally {
+            translateLock.unlock()
+        }
+    }
+
+    /**
+     * 预热：提前下载指定语言对的翻译模型。真正的下载由 ML Kit 在首次 translate 时惰性完成，
+     * 这里在后台主动触发，使实时/拍照的首次翻译不再阻塞等待下载（否则首帧会卡数秒）。
+     */
+    override fun preload(sourceLanguage: String, targetLanguage: String) {
+        val src = safeTranslateLanguage(sourceLanguage)
+        val tgt = safeTranslateLanguage(targetLanguage)
+        if (src == tgt) return
+        translateLock.lock()
+        try {
+            val t = getOrCreateTranslator(src, tgt)
+            Tasks.await(t.downloadModelIfNeeded())
+        } catch (t: Throwable) {
+            // 预热失败（无网络等）不阻塞主流程，翻译时会再次惰性下载。
+            Log.w("TranslateRepository", "preload failed for $src->$tgt", t)
         } finally {
             translateLock.unlock()
         }
