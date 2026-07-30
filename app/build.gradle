@@ -90,7 +90,7 @@ dependencies {
 
     // ML Kit
     implementation 'com.google.mlkit:text-recognition:16.0.0'      // Text Recognition v2
-    implementation 'com.google.mlkit:translate:16.0.0'             // Translate
+    implementation 'com.google.mlkit:translate:17.0.3'             // Translate（17.x 对齐 common 18.11.0，修复 LibraryVersion NoClassDefFoundError）
     implementation 'com.google.mlkit:language-id:17.0.6'           // Language identification (auto-detect)
 
     // Google Play Services tasks (provides Tasks.await for blocking ML Kit results)
