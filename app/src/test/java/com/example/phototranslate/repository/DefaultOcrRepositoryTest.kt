@@ -32,7 +32,7 @@ class DefaultOcrRepositoryTest {
         every { imageProxy.close() } answers { closeCount++ }
 
         val recognizer = mockk<TextRecognizer>()
-        val repo = DefaultOcrRepository(recognizer)
+        val repo = DefaultOcrRepository(recognizer, recognizer)
         val result: OcrResult = repo.analyze(imageProxy)
 
         assertFalse("Null image must yield a failed (non-crashing) result", result.success)

@@ -23,7 +23,12 @@ class DefaultOcrUseCase(
     private val ocrRepository: OcrRepository
 ) : OcrUseCase {
 
-    constructor() : this(DefaultOcrRepository(PhotoTranslateApp.app().getTextRecognitionClient()))
+    constructor() : this(
+        DefaultOcrRepository(
+            PhotoTranslateApp.app().getTextRecognitionClient(),
+            PhotoTranslateApp.app().getCjkTextRecognitionClient()
+        )
+    )
 
     override fun analyze(imageProxy: ImageProxy): OcrResult = ocrRepository.analyze(imageProxy)
     override fun analyze(bitmap: Bitmap): OcrResult = ocrRepository.analyze(bitmap)

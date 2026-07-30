@@ -4,6 +4,7 @@ import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
+import android.graphics.Matrix
 import android.net.Uri
 import android.os.Bundle
 import android.os.Handler
@@ -73,6 +74,9 @@ class CameraActivity : AppCompatActivity() {
     private var lastOcrTime = 0L
     private val ocrThrottleInterval = 400L
     private val previousText = AtomicReference("")
+
+    // OCR 并发守卫：实时模式下仅允许同时存在一次识别+翻译，避免帧在相机线程堆积导致卡顿。
+    private val ocrRunning = AtomicBoolean(false)
 
     private lateinit var requestPermissionLauncher: ActivityResultLauncher<String>
 
@@ -248,6 +252,11 @@ class CameraActivity : AppCompatActivity() {
             imageProxy.close()
             return
         }
+        // 上一次识别尚未结束则直接丢弃本帧，只处理最新画面，避免堆积导致实时卡顿。
+        if (!ocrRunning.compareAndSet(false, true)) {
+            imageProxy.close()
+            return
+        }
         lastOcrTime = currentTime
 
         cameraExecutor.execute {
@@ -264,6 +273,8 @@ class CameraActivity : AppCompatActivity() {
             } catch (t: Throwable) {
                 Log.e("CameraActivity", "OCR frame failed", t)
                 try { imageProxy.close() } catch (_: Throwable) { /* no-op */ }
+            } finally {
+                ocrRunning.set(false)
             }
         }
     }
@@ -275,7 +286,10 @@ class CameraActivity : AppCompatActivity() {
                 fullText.substring(0, 100) + "…"
             } else fullText
 
-            if (currentMode == Mode.LIVE) translateLive(fullText)
+            if (currentMode == Mode.LIVE) {
+                val source = resolveSource(LanguagePreferences.getSource(this), ocrResult)
+                translateLive(fullText, source)
+            }
         } else {
             binding.originalText.text = ""
             binding.translatedText.text = getString(R.string.status_no_text)
@@ -283,7 +297,16 @@ class CameraActivity : AppCompatActivity() {
         }
     }
 
-    private fun translateLive(text: String) {
+    /**
+     * 解析翻译源语言：用户在语言页显式选择时尊重其选择；选「自动」时采用 OCR 推断的主导语种
+     * （由 DefaultOcrRepository 按文本块 recognizedLanguage 加权得出），比 LanguageIdentification 更准。
+     */
+    private fun resolveSource(userSource: String, ocrResult: OcrResult): String {
+        if (userSource != "auto") return userSource
+        return ocrResult.textRecognitionResult?.dominantLanguage ?: "auto"
+    }
+
+    private fun translateLive(text: String, sourceLang: String) {
         val previous = previousText.get()
         if (text == previous) return
         previousText.set(text)
@@ -291,7 +314,7 @@ class CameraActivity : AppCompatActivity() {
 
         lifecycleScope.launch(Dispatchers.IO + coroutineExceptionHandler) {
             val target = LanguagePreferences.getTarget(this@CameraActivity)
-            val result = translateUseCase.translate(text, "auto", target)
+            val result = translateUseCase.translate(text, sourceLang, target)
             mainHandler.post {
                 if (result.errorMessage != null) {
                     binding.translatedText.text = result.errorMessage
@@ -314,9 +337,12 @@ class CameraActivity : AppCompatActivity() {
             override fun onCaptureSuccess(image: ImageProxy) {
                 // toBitmap() 在部分设备或图像格式下可能抛异常，必须就地捕获，否则会在相机线程未捕获崩溃。
                 val bitmap: Bitmap = try {
-                    val b = image.toBitmap()
+                    // ImageCapture 回调拿到的图像未含显示方向旋转，需按 rotationDegrees 校正，
+                    // 否则竖屏拍照会得到横置画面，OCR 读歪导致翻译错误率飙升。
+                    val rotation = image.imageInfo.rotationDegrees
+                    val raw = image.toBitmap()
                     image.close()
-                    b
+                    rotateBitmap(raw, rotation)
                 } catch (t: Throwable) {
                     image.close()
                     Log.e("CameraActivity", "Bitmap conversion failed", t)
@@ -330,19 +356,20 @@ class CameraActivity : AppCompatActivity() {
                 lifecycleScope.launch(Dispatchers.IO + coroutineExceptionHandler) {
                     try {
                         val ocr = ocrUseCase.analyze(bitmap)
-                        val source = LanguagePreferences.getSource(this@CameraActivity)
+                        val userSource = LanguagePreferences.getSource(this@CameraActivity)
                         val target = LanguagePreferences.getTarget(this@CameraActivity)
                         if (ocr.success && ocr.textRecognitionResult != null) {
                             val fullText = ocr.textRecognitionResult.fullText
+                            val source = resolveSource(userSource, ocr)
                             val translation = translateUseCase.translate(fullText, source, target)
                             mainHandler.post {
                                 binding.loadingOverlay.visibility = android.view.View.GONE
-                                openResult(fullText, translation.originalLanguage, target, translation)
+                                openResult(fullText, source, target, translation)
                             }
                         } else {
                             mainHandler.post {
                                 binding.loadingOverlay.visibility = android.view.View.GONE
-                                openResult("", "auto", target, null)
+                                openResult("", userSource, target, null)
                             }
                         }
                     } catch (t: Throwable) {
@@ -384,6 +411,15 @@ class CameraActivity : AppCompatActivity() {
     // ===== UI 辅助 =====
     private fun updateStatus(text: String) {
         mainHandler.post { binding.statusText.text = text }
+    }
+
+    /**
+     * 按角度旋转 Bitmap（拍照方向校正用）。
+     */
+    private fun rotateBitmap(bitmap: Bitmap, degrees: Int): Bitmap {
+        if (degrees == 0) return bitmap
+        val matrix = Matrix().apply { postRotate(degrees.toFloat()) }
+        return Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true)
     }
 
     override fun onDestroy() {

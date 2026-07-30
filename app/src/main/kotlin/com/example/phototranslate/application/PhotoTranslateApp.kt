@@ -6,6 +6,7 @@ import com.google.mlkit.nl.translate.TranslateLanguage
 import com.google.mlkit.nl.translate.TranslatorOptions
 import com.google.mlkit.vision.text.TextRecognition
 import com.google.mlkit.vision.text.TextRecognizer
+import com.google.mlkit.vision.text.chinese.ChineseTextRecognizerOptions
 import com.google.mlkit.vision.text.latin.TextRecognizerOptions
 
 /**
@@ -52,15 +53,25 @@ class PhotoTranslateApp : Application() {
     }
 
     // ===== ML Kit Text Recognition Singleton =====
-    private val textRecognizer: TextRecognizer by lazy {
+    // 拉丁识别器：对英文/法文等拉丁字母文字最准。
+    private val latinTextRecognizer: TextRecognizer by lazy {
         TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
     }
 
+    // 中日韩识别器：覆盖中文/日文/韩文（也能读拉丁，但精度略低于拉丁识别器）。
+    private val cjkTextRecognizer: TextRecognizer by lazy {
+        TextRecognition.getClient(ChineseTextRecognizerOptions.Builder().build())
+    }
+
     /**
-     * Get the shared TextRecognizer client.
-     * Configured for real-time performance.
+     * 拉丁字母识别器客户端。
      */
-    fun getTextRecognitionClient(): TextRecognizer = textRecognizer
+    fun getTextRecognitionClient(): TextRecognizer = latinTextRecognizer
+
+    /**
+     * 中日韩(CJK)识别器客户端。
+     */
+    fun getCjkTextRecognitionClient(): TextRecognizer = cjkTextRecognizer
 
     /**
      * Get the shared TranslatorOptions.

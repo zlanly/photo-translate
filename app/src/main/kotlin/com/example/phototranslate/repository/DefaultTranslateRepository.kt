@@ -42,35 +42,28 @@ class DefaultTranslateRepository(
         private const val MIN_REQUIRED_SPACE_MB = 10
     }
 
-    // 单一可复用 Translator，按 (源,目标) 缓存；实时模式每帧调用时避免反复新建客户端 / 并发下载。
-    @Volatile
-    private var translator: Translator? = null
-    @Volatile
-    private var translatorSource: String? = null
-    @Volatile
-    private var translatorTarget: String? = null
+    // 按「源|目标」缓存的翻译器表：实时自动检测模式下源语种会在帧间翻转，
+    // 复用已下载好模型的翻译器可避免反复重建 + 重下载导致的卡顿/不可用。
+    private val translators = ConcurrentHashMap<String, Translator>()
 
-    // 串行化下载与翻译，避免 ML Kit 并发调用抛出异常。
+    // 串行化下载与翻译，避免 ML Kit 并发调用抛出异常（尤其首次下载模型时）。
     private val translateLock = java.util.concurrent.locks.ReentrantLock()
 
     // Track active download operations to avoid concurrent downloads for same language
     private val activeDownloads = ConcurrentHashMap<String, AtomicBoolean>()
 
     /**
-     * 获取（按需创建并缓存）对应语言对的 Translator。调用方需在 translateLock 保护下使用。
+     * 获取（按需创建并缓存）对应语言对的 Translator。不同语言对各自独立缓存、互不干扰。
      */
     private fun getOrCreateTranslator(sourceLang: String, targetLang: String): Translator {
-        if (translator == null || translatorSource != sourceLang || translatorTarget != targetLang) {
-            translator?.close()
+        val key = "$sourceLang|$targetLang"
+        return translators.computeIfAbsent(key) {
             val options = TranslatorOptions.Builder()
                 .setSourceLanguage(sourceLang)
                 .setTargetLanguage(targetLang)
                 .build()
-            translator = Translation.getClient(options)
-            translatorSource = sourceLang
-            translatorTarget = targetLang
+            Translation.getClient(options)
         }
-        return translator!!
     }
 
     /**
@@ -281,17 +274,20 @@ class DefaultTranslateRepository(
     override fun configure(options: TranslatorOptions) {
         translateLock.lock()
         try {
-            translator?.close()
-            translator = null
-            translatorSource = null
-            translatorTarget = null
+            translators.values.forEach { it.close() }
+            translators.clear()
         } finally {
             translateLock.unlock()
         }
     }
 
     override fun shutdown() {
-        translator?.close()
-        translator = null
+        translateLock.lock()
+        try {
+            translators.values.forEach { it.close() }
+            translators.clear()
+        } finally {
+            translateLock.unlock()
+        }
     }
 }

@@ -18,6 +18,7 @@ data class TextBlock(
 data class TextRecognitionResult(
     val blocks: List<TextBlock>,
     val fullText: String,
+    val dominantLanguage: String? = null,
     val timestamp: Long = System.currentTimeMillis()
 )
 
